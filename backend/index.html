@@ -650,7 +650,7 @@
                   </div>
 
                   <!-- Channel Selector -->
-                  <select x-model="pos.selectedChannel" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                  <select x-model="pos.selectedChannel" @change="updateOrderNumber()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
                     <option value="POS">🏪 หน้าร้าน</option>
                     <option value="GRAB">🛵 Grab Food</option>
                     <option value="LINEMAN">📦 LINE MAN</option>
@@ -668,6 +668,51 @@
                     <option value="DESSERT">ของหวาน</option>
                   </select>
                 </div>
+              </div>
+
+              <!-- Order Number Section -->
+              <div x-show="getChannelInfo(pos.selectedChannel)" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-md p-4 mb-4 border-2 border-purple-200">
+                <!-- AUTO Channel: Display Generated Order Number -->
+                <template x-if="getChannelInfo(pos.selectedChannel) && getChannelInfo(pos.selectedChannel).orderNumberMode === 'AUTO'">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <div class="bg-purple-500 text-white rounded-lg p-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-600 font-semibold">เลขที่ออเดอร์</p>
+                        <p class="text-lg font-bold text-purple-700" x-text="pos.previewOrderNumber || 'กำลังสร้าง...'"></p>
+                      </div>
+                    </div>
+                    <span class="badge badge-success text-xs">สร้างอัตโนมัติ</span>
+                  </div>
+                </template>
+
+                <!-- MANUAL Channel: Show Input Field -->
+                <template x-if="getChannelInfo(pos.selectedChannel) && getChannelInfo(pos.selectedChannel).orderNumberMode === 'MANUAL'">
+                  <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center justify-between">
+                      <span>
+                        เลขที่ออเดอร์จาก <span x-text="getChannelName(pos.selectedChannel)" class="text-purple-600"></span>
+                        <span class="text-red-500 ml-1">*</span>
+                      </span>
+                      <span class="badge badge-warning text-xs">กรอกเอง</span>
+                    </label>
+                    <input
+                      type="text"
+                      x-model="manualOrderNumber"
+                      placeholder="กรอกเลขที่ออเดอร์ เช่น GRAB-12345678"
+                      class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-base font-semibold">
+                    <p class="text-xs text-gray-600 mt-2 flex items-start">
+                      <svg class="w-4 h-4 mr-1 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z" />
+                      </svg>
+                      <span>ต้องกรอกเลขที่ออเดอร์จากระบบ <span x-text="getChannelName(pos.selectedChannel)"></span> ก่อนชำระเงิน</span>
+                    </p>
+                  </div>
+                </template>
               </div>
 
               <!-- Products Grid -->
@@ -1259,12 +1304,17 @@
                   <input type="tel" x-model="settings.phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                 </div>
                 <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">อีเมล</label>
+                  <input type="email" x-model="settings.email" placeholder="example@shop.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
                   <label class="block text-sm font-semibold text-gray-700 mb-2">ที่อยู่</label>
                   <textarea x-model="settings.address" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
                 </div>
-                <button @click="saveSettings()" class="w-full px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
-                  บันทึกการตั้งค่า
-                </button>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">เว็บไซต์</label>
+                  <input type="url" x-model="settings.website" placeholder="https://yourshop.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
               </div>
             </div>
 
@@ -1280,6 +1330,18 @@
                   <label class="block text-sm font-semibold text-gray-700 mb-2">เลขประจำตัวผู้เสียภาษี</label>
                   <input type="text" x-model="settings.taxId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                 </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">สกุลเงิน</label>
+                  <select x-model="settings.currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="THB">THB - บาท (฿)</option>
+                    <option value="USD">USD - ดอลลาร์ ($)</option>
+                    <option value="EUR">EUR - ยูโร (€)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ข้อความท้ายใบเสร็จ</label>
+                  <textarea x-model="settings.receiptFooter" rows="2" placeholder="ขอบคุณที่อุดหนุน" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
                 <div class="flex items-center">
                   <input type="checkbox" x-model="settings.printReceipt" id="printReceipt" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                   <label for="printReceipt" class="ml-2 text-sm text-gray-700">พิมพ์ใบเสร็จอัตโนมัติ</label>
@@ -1291,6 +1353,81 @@
               </div>
             </div>
 
+            <!-- Payment Settings -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">การตั้งค่าการชำระเงิน</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    หมายเลขพร้อมเพย์
+                    <span class="text-xs text-gray-500 font-normal">(เบอร์โทร หรือ เลขประจำตัวผู้เสียภาษี 13 หลัก)</span>
+                  </label>
+                  <input type="text" x-model="settings.promptpay_number" placeholder="0812345678 หรือ 1234567890123" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <p class="text-xs text-gray-500 mt-1">ใช้สำหรับสร้าง QR Code PromptPay ในหน้าชำระเงิน</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อบัญชี</label>
+                  <input type="text" x-model="settings.bankAccountName" placeholder="ชื่อบัญชีธนาคาร" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ธนาคาร</label>
+                  <input type="text" x-model="settings.bankName" placeholder="ธนาคารกสิกรไทย" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">เลขที่บัญชี</label>
+                  <input type="text" x-model="settings.bankAccountNumber" placeholder="xxx-x-xxxxx-x" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- System Preferences -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">การตั้งค่าระบบ</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">โลโก้ร้าน (URL)</label>
+                  <input type="url" x-model="settings.logoUrl" placeholder="https://example.com/logo.png" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <p class="text-xs text-gray-500 mt-1">URL ของรูปโลโก้สำหรับแสดงบนใบเสร็จและเอกสาร</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">เขตเวลา</label>
+                  <select x-model="settings.timezone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="Asia/Bangkok">Asia/Bangkok (GMT+7)</option>
+                    <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ภาษา</label>
+                  <select x-model="settings.language" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="th">ไทย</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนสินค้าที่แสดงต่อหน้า</label>
+                  <input type="number" x-model="settings.itemsPerPage" min="10" max="100" step="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" x-model="settings.enableNotifications" id="enableNotifications" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                  <label for="enableNotifications" class="ml-2 text-sm text-gray-700">เปิดใช้งานการแจ้งเตือน</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" x-model="settings.enableSound" id="enableSound" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                  <label for="enableSound" class="ml-2 text-sm text-gray-700">เปิดเสียงแจ้งเตือน</label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save All Settings Button -->
+          <div class="mt-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <button @click="saveSettings()" class="w-full px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+                💾 บันทึกการตั้งค่าทั้งหมด
+              </button>
+            </div>
           </div>
 
           <!-- Channels Management -->
@@ -1534,19 +1671,6 @@
             <span>รวมทั้งสิ้น</span>
             <span x-text="formatCurrency(pos.total)"></span>
           </div>
-        </div>
-
-        <!-- Manual Order Number (for MANUAL channels) -->
-        <div x-show="getChannelInfo(pos.selectedChannel) && getChannelInfo(pos.selectedChannel).orderNumberMode === 'MANUAL'" class="mb-6">
-          <label class="block text-sm font-bold text-gray-700 mb-2">
-            เลขที่ออเดอร์จาก <span x-text="getChannelName(pos.selectedChannel)"></span>
-            <span class="text-red-500">*</span>
-          </label>
-          <input type="text"
-                 x-model="manualOrderNumber"
-                 placeholder="กรอกเลขที่ออเดอร์ เช่น GRAB-12345678"
-                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
-          <p class="text-xs text-gray-500 mt-1">ต้องกรอกเลขที่ออเดอร์จากระบบภายนอก</p>
         </div>
 
         <!-- Payment Method -->
@@ -2299,6 +2423,7 @@
         searchQuery: '',
         selectedCategory: '',
         selectedChannel: 'POS', // Default channel: POS (In-store)
+        previewOrderNumber: '', // For AUTO channels - preview of order number
         filteredProducts: [],
         allProducts: []
       },
@@ -2401,12 +2526,25 @@
       settings: {
         shopName: '',
         phone: '',
+        email: '',
         address: '',
+        website: '',
         taxRate: 7,
         taxId: '',
+        currency: 'THB',
+        receiptFooter: '',
         printReceipt: true,
         autoDeductStock: true,
-        promptpay_number: ''  // เบอร์พร้อมเพย์สำหรับ QR Code
+        promptpay_number: '',  // เบอร์พร้อมเพย์สำหรับ QR Code
+        bankAccountName: '',
+        bankName: '',
+        bankAccountNumber: '',
+        logoUrl: '',
+        timezone: 'Asia/Bangkok',
+        language: 'th',
+        itemsPerPage: 20,
+        enableNotifications: true,
+        enableSound: true
       },
 
       // Channels Management
@@ -3087,10 +3225,60 @@
         this.pos.total = this.pos.subtotal + this.pos.tax;
       },
 
+      updateOrderNumber() {
+        console.log('📋 [POS] Updating order number preview for channel:', this.pos.selectedChannel);
+        const channel = this.getChannelInfo(this.pos.selectedChannel);
+
+        if (!channel) {
+          this.pos.previewOrderNumber = '';
+          return;
+        }
+
+        if (channel.orderNumberMode === 'AUTO') {
+          // Generate preview order number based on format
+          const now = new Date();
+          const year = now.getFullYear().toString();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+
+          let format = channel.orderNumberFormat || '#{NNNN}';
+          let preview = format
+            .replace('{YYYY}', year)
+            .replace('{YY}', year.slice(-2))
+            .replace('{MM}', month)
+            .replace('{DD}', day)
+            .replace('{NNNN}', '####')  // Placeholder for sequence
+            .replace('{NNN}', '###')
+            .replace('{NN}', '##');
+
+          this.pos.previewOrderNumber = preview;
+          console.log('📋 [POS] Preview order number:', preview);
+        } else {
+          // MANUAL mode - clear preview and reset manual input
+          this.pos.previewOrderNumber = '';
+          this.manualOrderNumber = '';
+        }
+      },
+
       openPaymentModal() {
         console.log('💳 [PAYMENT] Opening payment modal');
         if (this.pos.cart.length === 0) {
           return;
+        }
+
+        // Validate manual order number for MANUAL channels
+        const channel = this.getChannelInfo(this.pos.selectedChannel);
+        if (channel && channel.orderNumberMode === 'MANUAL') {
+          if (!this.manualOrderNumber || this.manualOrderNumber.trim() === '') {
+            Swal.fire({
+              icon: 'warning',
+              title: 'กรุณากรอกเลขที่ออเดอร์',
+              text: 'ต้องกรอกเลขที่ออเดอร์จาก ' + channel.channelName + ' ก่อนชำระเงิน',
+              confirmButtonText: 'ตกลง',
+              confirmButtonColor: '#9333ea'
+            });
+            return; // Don't open payment modal
+          }
         }
 
         this.payment = {
@@ -3099,8 +3287,6 @@
           change: 0,
           slipFile: null
         };
-
-        this.manualOrderNumber = '';  // Reset manual order number
 
         this.modals.payment = true;
       },
@@ -3614,6 +3800,9 @@
           if (response.success) {
             this.channels.list = response.data;
             console.log('✅ [DATA] Loaded', response.data.length, 'channels');
+
+            // Update order number preview after channels loaded
+            this.updateOrderNumber();
           }
         } catch (error) {
           console.error('❌ [DATA] Error loading channels:', error);
