@@ -870,17 +870,33 @@
 
         <!-- PRODUCTS PAGE -->
         <div x-show="currentPage === 'products'" x-cloak>
-          <div class="mb-6 flex justify-between items-center">
-            <div>
-              <h2 class="text-2xl font-bold text-gray-800">จัดการสินค้า</h2>
-              <p class="text-gray-500">เพิ่ม แก้ไข และจัดการสินค้าทั้งหมด</p>
+          <div class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h2 class="text-2xl font-bold text-gray-800">จัดการสินค้า</h2>
+                <p class="text-gray-500">เพิ่ม แก้ไข และจัดการสินค้าทั้งหมด</p>
+              </div>
+              <div class="flex space-x-3">
+                <button @click="modals.variantsGuide = true" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z" />
+                  </svg>
+                  คู่มือ Variants
+                </button>
+                <button @click="openVariantsManager()" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M11,7H13V11H17V13H13V17H11V13H7V11H11V7Z" />
+                  </svg>
+                  จัดการ Variants/Modifiers
+                </button>
+                <button @click="openProductModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                  </svg>
+                  เพิ่มสินค้า
+                </button>
+              </div>
             </div>
-            <button @click="openProductModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
-              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
-              </svg>
-              เพิ่มสินค้า
-            </button>
           </div>
 
           <!-- Products Grid -->
@@ -1571,6 +1587,480 @@
     </div>
   </div>
 
+  <!-- Variants Guide Modal -->
+  <div x-show="modals.variantsGuide" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div @click.away="modals.variantsGuide = false" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="gradient-purple-pink text-white p-6 rounded-t-2xl">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">📚 คู่มือการใช้งาน Variants และ Modifiers</h2>
+            <button @click="modals.variantsGuide = false" class="text-white hover:text-gray-200">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 space-y-6">
+          <!-- Introduction -->
+          <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+            <h3 class="font-bold text-blue-800 mb-2">🎯 Variants และ Modifiers คืออะไร?</h3>
+            <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+              <li><strong>Variants</strong> = ตัวเลือกพื้นฐานของสินค้าที่ลูกค้าต้องเลือก เช่น ขนาด, อุณหภูมิ, ความหวาน</li>
+              <li><strong>Modifiers</strong> = ท็อปปิ้งหรือส่วนเสริมที่ลูกค้าสามารถเลือกเพิ่มได้ เช่น วิปครีม, ช็อตกาแฟเพิ่ม</li>
+            </ul>
+          </div>
+
+          <!-- Variants Section -->
+          <div>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" />
+              </svg>
+              Variants (ตัวเลือกสินค้า)
+            </h3>
+
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <p class="text-sm text-gray-700 mb-3"><strong>วิธีการตั้งค่า Variants:</strong></p>
+              <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                <li>กดปุ่ม "จัดการ Variants/Modifiers"</li>
+                <li>ในส่วน Variants กดปุ่ม "เพิ่ม Variant"</li>
+                <li>เลือก Product ที่ต้องการ</li>
+                <li>เลือก Variant Type (ประเภทตัวเลือก)</li>
+                <li>กรอก Variant Value (ค่าตัวเลือก)</li>
+                <li>กรอก Display Name (ชื่อแสดง)</li>
+                <li>กรอก Price Adjust (ปรับราคา +/-)</li>
+              </ol>
+            </div>
+
+            <div class="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+              <p class="font-semibold text-purple-800 mb-3">✨ ตัวอย่าง Variants สำหรับเครื่องดื่ม:</p>
+
+              <div class="space-y-4 text-sm">
+                <div class="bg-white p-3 rounded border border-purple-100">
+                  <p class="font-semibold text-purple-700">Variant Type: SIZE (ขนาด)</p>
+                  <div class="mt-2 space-y-1 text-gray-700">
+                    <p>• SMALL (เล็ก) - Price Adjust: 0</p>
+                    <p>• MEDIUM (กลาง) - Price Adjust: 0</p>
+                    <p>• LARGE (ใหญ่) - Price Adjust: +10</p>
+                  </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border border-purple-100">
+                  <p class="font-semibold text-purple-700">Variant Type: TEMPERATURE (อุณหภูมิ)</p>
+                  <div class="mt-2 space-y-1 text-gray-700">
+                    <p>• HOT (ร้อน) - Price Adjust: 0</p>
+                    <p>• COLD (เย็น) - Price Adjust: 0</p>
+                  </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border border-purple-100">
+                  <p class="font-semibold text-purple-700">Variant Type: SWEETNESS (ความหวาน)</p>
+                  <div class="mt-2 space-y-1 text-gray-700">
+                    <p>• 0% - Price Adjust: 0</p>
+                    <p>• 25% - Price Adjust: 0</p>
+                    <p>• 50% - Price Adjust: 0</p>
+                    <p>• 75% - Price Adjust: 0</p>
+                    <p>• 100% - Price Adjust: 0</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modifiers Section -->
+          <div>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12,3L2,12H5V20H19V12H22M12,8.75A2.25,2.25 0 0,1 14.25,11A2.25,2.25 0 0,1 12,13.25A2.25,2.25 0 0,1 9.75,11A2.25,2.25 0 0,1 12,8.75Z" />
+              </svg>
+              Modifiers (ท็อปปิ้ง/ส่วนเสริม)
+            </h3>
+
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <p class="text-sm text-gray-700 mb-3"><strong>วิธีการตั้งค่า Modifiers:</strong></p>
+              <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                <li>กดปุ่ม "จัดการ Variants/Modifiers"</li>
+                <li>ในส่วน Modifiers กดปุ่ม "เพิ่ม Modifier"</li>
+                <li>เลือก Product (หรือเว้นว่างถ้าต้องการใช้กับทุกสินค้า)</li>
+                <li>กรอกชื่อ Modifier</li>
+                <li>กรอกราคาเพิ่ม</li>
+                <li>เลือกประเภท (TOPPING, EXTRA, etc.)</li>
+              </ol>
+            </div>
+
+            <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+              <p class="font-semibold text-orange-800 mb-3">✨ ตัวอย่าง Modifiers:</p>
+
+              <div class="space-y-3 text-sm">
+                <div class="bg-white p-3 rounded border border-orange-100">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-semibold text-orange-700">วิปครีม (Whipped Cream)</p>
+                      <p class="text-gray-600 text-xs mt-1">Type: TOPPING</p>
+                    </div>
+                    <span class="text-orange-600 font-bold">+10฿</span>
+                  </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border border-orange-100">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-semibold text-orange-700">ช็อตกาแฟเพิ่ม (Extra Shot)</p>
+                      <p class="text-gray-600 text-xs mt-1">Type: EXTRA</p>
+                    </div>
+                    <span class="text-orange-600 font-bold">+15฿</span>
+                  </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border border-orange-100">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-semibold text-orange-700">เปลี่ยนนมถั่วเหลือง</p>
+                      <p class="text-gray-600 text-xs mt-1">Type: ALTERNATIVE</p>
+                    </div>
+                    <span class="text-orange-600 font-bold">+10฿</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips -->
+          <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+            <h3 class="font-bold text-green-800 mb-2">💡 เคล็ดลับการใช้งาน:</h3>
+            <ul class="text-sm text-green-700 space-y-1 list-disc list-inside">
+              <li>ใช้ <strong>isDefault: true</strong> เพื่อกำหนดตัวเลือกเริ่มต้น (เช่น MEDIUM, HOT, 50%)</li>
+              <li>ใช้ <strong>sortOrder</strong> เพื่อจัดลำดับการแสดงผล (เลขน้อยแสดงก่อน)</li>
+              <li>Modifiers ที่ <strong>productId = null</strong> จะใช้ได้กับทุกสินค้า</li>
+              <li>Price Adjust สามารถเป็นค่าลบได้ (เช่น ลดราคา -5)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 p-4 rounded-b-2xl">
+          <button @click="modals.variantsGuide = false; openVariantsManager()"
+                  class="w-full px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            เข้าใจแล้ว ไปจัดการ Variants/Modifiers
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Variants Manager Modal -->
+  <div x-show="modals.variantsManager" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div @click.away="modals.variantsManager = false" class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="gradient-purple-pink text-white p-6 rounded-t-2xl">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">จัดการ Variants และ Modifiers</h2>
+            <button @click="modals.variantsManager = false" class="text-white hover:text-gray-200">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Variants Section -->
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-purple-800">Variants (ตัวเลือกสินค้า)</h3>
+                <button @click="openVariantForm()" class="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                  </svg>
+                  เพิ่ม Variant
+                </button>
+              </div>
+
+              <div class="space-y-3 max-h-96 overflow-y-auto">
+                <template x-if="variants.list.length === 0">
+                  <div class="text-center py-8 text-gray-400">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M11,7H13V11H17V13H13V17H11V13H7V11H11V7Z" />
+                    </svg>
+                    <p class="text-sm">ยังไม่มี Variants</p>
+                  </div>
+                </template>
+
+                <template x-for="variant in variants.list" :key="variant.variantId">
+                  <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex-1">
+                        <p class="font-semibold text-purple-800" x-text="variant.displayName"></p>
+                        <p class="text-xs text-purple-600">
+                          <span x-text="variant.variantType"></span> → <span x-text="variant.variantValue"></span>
+                        </p>
+                        <p class="text-xs text-gray-600 mt-1">
+                          Product ID: <span x-text="variant.productId"></span>
+                        </p>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-bold text-purple-600" x-text="variant.priceAdjust > 0 ? '+' + variant.priceAdjust + '฿' : (variant.priceAdjust < 0 ? variant.priceAdjust + '฿' : '0฿')"></p>
+                        <span x-show="variant.isDefault" class="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">ค่าเริ่มต้น</span>
+                      </div>
+                    </div>
+                    <div class="flex space-x-2">
+                      <button @click="editVariant(variant)" class="flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+                        แก้ไข
+                      </button>
+                      <button @click="deleteVariantConfirm(variant.variantId)" class="flex-1 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
+                        ลบ
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Modifiers Section -->
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-orange-800">Modifiers (ท็อปปิ้ง/ส่วนเสริม)</h3>
+                <button @click="openModifierForm()" class="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                  </svg>
+                  เพิ่ม Modifier
+                </button>
+              </div>
+
+              <div class="space-y-3 max-h-96 overflow-y-auto">
+                <template x-if="modifiers.list.length === 0">
+                  <div class="text-center py-8 text-gray-400">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12,3L2,12H5V20H19V12H22M12,8.75A2.25,2.25 0 0,1 14.25,11A2.25,2.25 0 0,1 12,13.25A2.25,2.25 0 0,1 9.75,11A2.25,2.25 0 0,1 12,8.75Z" />
+                    </svg>
+                    <p class="text-sm">ยังไม่มี Modifiers</p>
+                  </div>
+                </template>
+
+                <template x-for="modifier in modifiers.list" :key="modifier.modifierId">
+                  <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex-1">
+                        <p class="font-semibold text-orange-800" x-text="modifier.name"></p>
+                        <p class="text-xs text-orange-600" x-text="modifier.modifierType"></p>
+                        <p class="text-xs text-gray-600 mt-1" x-show="modifier.productId">
+                          Product ID: <span x-text="modifier.productId"></span>
+                        </p>
+                        <p class="text-xs text-gray-600 mt-1" x-show="!modifier.productId">
+                          ใช้ได้กับทุกสินค้า
+                        </p>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-bold text-orange-600" x-text="'+' + modifier.price + '฿'"></p>
+                      </div>
+                    </div>
+                    <div class="flex space-x-2">
+                      <button @click="editModifier(modifier)" class="flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+                        แก้ไข
+                      </button>
+                      <button @click="deleteModifierConfirm(modifier.modifierId)" class="flex-1 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
+                        ลบ
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 p-4 rounded-b-2xl">
+          <button @click="modals.variantsManager = false" class="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition">
+            ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Variant Form Modal -->
+  <div x-show="modals.variantForm" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div @click.away="modals.variantForm = false" class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+        <!-- Header -->
+        <div class="gradient-purple-pink text-white p-6 rounded-t-2xl">
+          <h2 class="text-xl font-bold" x-text="variants.editing ? 'แก้ไข Variant' : 'เพิ่ม Variant'"></h2>
+        </div>
+
+        <!-- Form -->
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Product</label>
+              <select x-model="variants.form.productId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">เลือกสินค้า</option>
+                <template x-for="product in products.list" :key="product.productId">
+                  <option :value="product.productId" x-text="product.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Variant Type</label>
+              <select x-model="variants.form.variantType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="SIZE">SIZE (ขนาด)</option>
+                <option value="TEMPERATURE">TEMPERATURE (อุณหภูมิ)</option>
+                <option value="SWEETNESS">SWEETNESS (ความหวาน)</option>
+                <option value="ICE">ICE (น้ำแข็ง)</option>
+                <option value="MILK">MILK (นม)</option>
+                <option value="OTHER">OTHER (อื่นๆ)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Variant Value</label>
+              <input type="text" x-model="variants.form.variantValue" placeholder="เช่น SMALL, MEDIUM, LARGE" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Display Name</label>
+              <input type="text" x-model="variants.form.displayName" placeholder="เช่น เล็ก, กลาง, ใหญ่" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Price Adjust (฿)</label>
+              <input type="number" x-model.number="variants.form.priceAdjust" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <p class="text-xs text-gray-500 mt-1">ใส่ค่าบวก (+10) หรือลบ (-5) เพื่อปรับราคา</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Sort Order</label>
+              <input type="number" x-model.number="variants.form.sortOrder" placeholder="999" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <p class="text-xs text-gray-500 mt-1">เลขน้อยแสดงก่อน</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center">
+              <input type="checkbox" x-model="variants.form.isDefault" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+              <span class="ml-2 text-sm text-gray-700">ตั้งเป็นค่าเริ่มต้น</span>
+            </label>
+
+            <label class="flex items-center">
+              <input type="checkbox" x-model="variants.form.isAvailable" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+              <span class="ml-2 text-sm text-gray-700">พร้อมขาย</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3 p-6 bg-gray-50 rounded-b-2xl">
+          <button @click="modals.variantForm = false" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition">
+            ยกเลิก
+          </button>
+          <button @click="saveVariant()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            <span x-text="variants.editing ? 'บันทึกการแก้ไข' : 'เพิ่ม Variant'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modifier Form Modal -->
+  <div x-show="modals.modifierForm" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div @click.away="modals.modifierForm = false" class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+        <!-- Header -->
+        <div class="gradient-purple-pink text-white p-6 rounded-t-2xl">
+          <h2 class="text-xl font-bold" x-text="modifiers.editing ? 'แก้ไข Modifier' : 'เพิ่ม Modifier'"></h2>
+        </div>
+
+        <!-- Form -->
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Product (ถ้าต้องการใช้กับทุกสินค้าให้เว้นว่าง)</label>
+            <select x-model="modifiers.form.productId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <option value="">ใช้กับทุกสินค้า</option>
+              <template x-for="product in products.list" :key="product.productId">
+                <option :value="product.productId" x-text="product.name"></option>
+              </template>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อ Modifier *</label>
+              <input type="text" x-model="modifiers.form.name" placeholder="เช่น วิปครีม, ช็อตกาแฟเพิ่ม" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Modifier Type</label>
+              <select x-model="modifiers.form.modifierType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="TOPPING">TOPPING (ท็อปปิ้ง)</option>
+                <option value="EXTRA">EXTRA (เพิ่มเติม)</option>
+                <option value="ALTERNATIVE">ALTERNATIVE (ทดแทน)</option>
+                <option value="ADDON">ADDON (ส่วนเสริม)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">คำอธิบาย</label>
+            <textarea x-model="modifiers.form.description" rows="2" placeholder="คำอธิบายเพิ่มเติม (ถ้ามี)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">ราคา (฿) *</label>
+              <input type="number" x-model.number="modifiers.form.price" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">ต้นทุน (฿)</label>
+              <input type="number" x-model.number="modifiers.form.cost" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนสูงสุด</label>
+              <input type="number" x-model.number="modifiers.form.maxQuantity" placeholder="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center">
+              <input type="checkbox" x-model="modifiers.form.isAvailable" class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500">
+              <span class="ml-2 text-sm text-gray-700">พร้อมขาย</span>
+            </label>
+
+            <div class="flex-1">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Sort Order</label>
+              <input type="number" x-model.number="modifiers.form.sortOrder" placeholder="999" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3 p-6 bg-gray-50 rounded-b-2xl">
+          <button @click="modals.modifierForm = false" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition">
+            ยกเลิก
+          </button>
+          <button @click="saveModifier()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            <span x-text="modifiers.editing ? 'บันทึกการแก้ไข' : 'เพิ่ม Modifier'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Alpine.js Application Script -->
   <script>
   console.log('🚀 [INIT] Loading Coffee Shop POS Application Script...');
@@ -1617,7 +2107,11 @@
         orderDetail: false,
         productForm: false,
         stockAdjust: false,
-        channelForm: false
+        channelForm: false,
+        variantsManager: false,
+        variantForm: false,
+        modifierForm: false,
+        variantsGuide: false
       },
 
       // POS
@@ -1664,6 +2158,40 @@
       // Products
       products: {
         list: []
+      },
+
+      // Variants & Modifiers
+      variants: {
+        list: [],
+        editing: null,
+        form: {
+          variantId: '',
+          productId: '',
+          variantType: 'SIZE',
+          variantValue: '',
+          displayName: '',
+          priceAdjust: 0,
+          isDefault: false,
+          isAvailable: true,
+          sortOrder: 999
+        }
+      },
+
+      modifiers: {
+        list: [],
+        editing: null,
+        form: {
+          modifierId: '',
+          productId: '',
+          name: '',
+          description: '',
+          price: 0,
+          cost: 0,
+          modifierType: 'TOPPING',
+          maxQuantity: 1,
+          isAvailable: true,
+          sortOrder: 999
+        }
       },
 
       // Inventory
@@ -1970,6 +2498,247 @@
           }
         } catch (error) {
           console.error('❌ [DATA] Error loading reports:', error);
+        }
+      },
+
+      // ==================== VARIANTS/MODIFIERS FUNCTIONS ====================
+
+      async loadVariants() {
+        console.log('🎨 [DATA] Loading variants...');
+        try {
+          const response = await this.callAPI('getVariants', {
+            shopSheetId: this.shopSheetId
+          });
+
+          if (response.success) {
+            this.variants.list = response.data;
+            console.log('✅ [DATA] Loaded', response.data.length, 'variants');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error loading variants:', error);
+        }
+      },
+
+      async loadModifiers() {
+        console.log('🎨 [DATA] Loading modifiers...');
+        try {
+          const response = await this.callAPI('getModifiers', {
+            shopSheetId: this.shopSheetId
+          });
+
+          if (response.success) {
+            this.modifiers.list = response.data;
+            console.log('✅ [DATA] Loaded', response.data.length, 'modifiers');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error loading modifiers:', error);
+        }
+      },
+
+      async openVariantsManager() {
+        console.log('🎨 [UI] Opening Variants Manager');
+        await this.loadVariants();
+        await this.loadModifiers();
+        this.modals.variantsManager = true;
+      },
+
+      openVariantForm() {
+        console.log('➕ [UI] Opening Variant Form (New)');
+        this.variants.editing = null;
+        this.variants.form = {
+          variantId: '',
+          productId: '',
+          variantType: 'SIZE',
+          variantValue: '',
+          displayName: '',
+          priceAdjust: 0,
+          isDefault: false,
+          isAvailable: true,
+          sortOrder: 999
+        };
+        this.modals.variantForm = true;
+      },
+
+      editVariant(variant) {
+        console.log('✏️ [UI] Opening Variant Form (Edit):', variant.variantId);
+        this.variants.editing = variant.variantId;
+        this.variants.form = {
+          variantId: variant.variantId,
+          productId: variant.productId,
+          variantType: variant.variantType,
+          variantValue: variant.variantValue,
+          displayName: variant.displayName,
+          priceAdjust: variant.priceAdjust,
+          isDefault: variant.isDefault,
+          isAvailable: variant.isAvailable,
+          sortOrder: variant.sortOrder
+        };
+        this.modals.variantForm = true;
+      },
+
+      async saveVariant() {
+        console.log('💾 [DATA] Saving variant...');
+
+        // Validation
+        if (!this.variants.form.productId) {
+          this.showWarning('กรุณาเลือกสินค้า');
+          return;
+        }
+        if (!this.variants.form.variantValue) {
+          this.showWarning('กรุณากรอก Variant Value');
+          return;
+        }
+        if (!this.variants.form.displayName) {
+          this.showWarning('กรุณากรอก Display Name');
+          return;
+        }
+
+        this.loading = true;
+
+        try {
+          const action = this.variants.editing ? 'updateVariant' : 'createVariant';
+          const response = await this.callAPI(action, {
+            shopSheetId: this.shopSheetId,
+            ...this.variants.form
+          });
+
+          if (response.success) {
+            this.showSuccess(this.variants.editing ? 'อัพเดท Variant สำเร็จ' : 'เพิ่ม Variant สำเร็จ');
+            this.modals.variantForm = false;
+            await this.loadVariants();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error saving variant:', error);
+          this.showError('เกิดข้อผิดพลาดในการบันทึก Variant');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async deleteVariantConfirm(variantId) {
+        if (!confirm('ต้องการลบ Variant นี้ใช่หรือไม่?')) {
+          return;
+        }
+
+        console.log('🗑️ [DATA] Deleting variant:', variantId);
+        this.loading = true;
+
+        try {
+          const response = await this.callAPI('deleteVariant', {
+            shopSheetId: this.shopSheetId,
+            variantId: variantId
+          });
+
+          if (response.success) {
+            this.showSuccess('ลบ Variant สำเร็จ');
+            await this.loadVariants();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error deleting variant:', error);
+          this.showError('เกิดข้อผิดพลาดในการลบ Variant');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      openModifierForm() {
+        console.log('➕ [UI] Opening Modifier Form (New)');
+        this.modifiers.editing = null;
+        this.modifiers.form = {
+          modifierId: '',
+          productId: '',
+          name: '',
+          description: '',
+          price: 0,
+          cost: 0,
+          modifierType: 'TOPPING',
+          maxQuantity: 1,
+          isAvailable: true,
+          sortOrder: 999
+        };
+        this.modals.modifierForm = true;
+      },
+
+      editModifier(modifier) {
+        console.log('✏️ [UI] Opening Modifier Form (Edit):', modifier.modifierId);
+        this.modifiers.editing = modifier.modifierId;
+        this.modifiers.form = {
+          modifierId: modifier.modifierId,
+          productId: modifier.productId,
+          name: modifier.name,
+          description: modifier.description,
+          price: modifier.price,
+          cost: modifier.cost,
+          modifierType: modifier.modifierType,
+          maxQuantity: modifier.maxQuantity,
+          isAvailable: modifier.isAvailable,
+          sortOrder: modifier.sortOrder
+        };
+        this.modals.modifierForm = true;
+      },
+
+      async saveModifier() {
+        console.log('💾 [DATA] Saving modifier...');
+
+        // Validation
+        if (!this.modifiers.form.name) {
+          this.showWarning('กรุณากรอกชื่อ Modifier');
+          return;
+        }
+
+        this.loading = true;
+
+        try {
+          const action = this.modifiers.editing ? 'updateModifier' : 'createModifier';
+          const response = await this.callAPI(action, {
+            shopSheetId: this.shopSheetId,
+            ...this.modifiers.form
+          });
+
+          if (response.success) {
+            this.showSuccess(this.modifiers.editing ? 'อัพเดท Modifier สำเร็จ' : 'เพิ่ม Modifier สำเร็จ');
+            this.modals.modifierForm = false;
+            await this.loadModifiers();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error saving modifier:', error);
+          this.showError('เกิดข้อผิดพลาดในการบันทึก Modifier');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async deleteModifierConfirm(modifierId) {
+        if (!confirm('ต้องการลบ Modifier นี้ใช่หรือไม่?')) {
+          return;
+        }
+
+        console.log('🗑️ [DATA] Deleting modifier:', modifierId);
+        this.loading = true;
+
+        try {
+          const response = await this.callAPI('deleteModifier', {
+            shopSheetId: this.shopSheetId,
+            modifierId: modifierId
+          });
+
+          if (response.success) {
+            this.showSuccess('ลบ Modifier สำเร็จ');
+            await this.loadModifiers();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
+          }
+        } catch (error) {
+          console.error('❌ [DATA] Error deleting modifier:', error);
+          this.showError('เกิดข้อผิดพลาดในการลบ Modifier');
+        } finally {
+          this.loading = false;
         }
       },
 
