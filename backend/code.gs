@@ -547,9 +547,7 @@ function getTenants(params) {
 
     return {
       success: true,
-      data: {
-        tenants: tenants
-      }
+      data: tenants
     };
 
   } catch (error) {
@@ -674,9 +672,7 @@ function getProducts(params) {
 
     return {
       success: true,
-      data: {
-        products: products
-      }
+      data: products
     };
 
   } catch (error) {
@@ -858,9 +854,7 @@ function getVariants(params) {
 
     return {
       success: true,
-      data: {
-        variants: variants
-      }
+      data: variants
     };
 
   } catch (error) {
@@ -1016,9 +1010,7 @@ function getModifiers(params) {
 
     return {
       success: true,
-      data: {
-        modifiers: modifiers
-      }
+      data: modifiers
     };
 
   } catch (error) {
@@ -1178,9 +1170,7 @@ function getInventoryItems(params) {
 
     return {
       success: true,
-      data: {
-        items: items
-      }
+      data: items
     };
 
   } catch (error) {
@@ -1437,9 +1427,7 @@ function getStockMovements(params) {
 
     return {
       success: true,
-      data: {
-        movements: movements
-      }
+      data: movements
     };
 
   } catch (error) {
@@ -1496,9 +1484,7 @@ function getRecipes(params) {
 
     return {
       success: true,
-      data: {
-        recipes: recipes
-      }
+      data: recipes
     };
 
   } catch (error) {
@@ -1667,9 +1653,7 @@ function getProductRecipe(params) {
 
     return {
       success: true,
-      data: {
-        recipe: recipe
-      }
+      data: recipe
     };
 
   } catch (error) {
@@ -1992,9 +1976,7 @@ function getOrders(params) {
 
     return {
       success: true,
-      data: {
-        orders: orders
-      }
+      data: orders
     };
 
   } catch (error) {
@@ -2762,9 +2744,7 @@ function getCustomers(params) {
 
     return {
       success: true,
-      data: {
-        customers: customers
-      }
+      data: customers
     };
 
   } catch (error) {
@@ -2889,9 +2869,7 @@ function getSuppliers(params) {
 
     return {
       success: true,
-      data: {
-        suppliers: suppliers
-      }
+      data: suppliers
     };
 
   } catch (error) {
@@ -3086,9 +3064,7 @@ function getPurchaseOrders(params) {
 
     return {
       success: true,
-      data: {
-        purchaseOrders: pos
-      }
+      data: pos
     };
 
   } catch (error) {
@@ -3251,9 +3227,7 @@ function getSettings(params) {
 
     return {
       success: true,
-      data: {
-        settings: settings
-      }
+      data: settings
     };
 
   } catch (error) {
