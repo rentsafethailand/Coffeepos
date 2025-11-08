@@ -96,9 +96,16 @@ function coffeeShopApp() {
       totalOrders: 0,
       lowStockItems: 0,
       totalProfit: 0,
+      totalCommission: 0,      // NEW: Total commission across all channels
+      netProfit: 0,            // NEW: Profit after commission
+      channelStats: [],        // NEW: Per-channel statistics
+      topChannelsByProfit: [], // NEW: Top 5 channels by profit
       topProducts: [],
       lowStockList: []
     },
+
+    // Chart.js instance
+    channelSalesChart: null,
 
     // Reports
     reports: {
@@ -291,10 +298,95 @@ function coffeeShopApp() {
         if (response.success) {
           this.dashboardData = response.data;
           this.lowStockCount = response.data.lowStockItems || 0;
+
+          // Initialize channel sales chart if on dashboard page
+          this.$nextTick(() => {
+            if (this.currentPage === 'dashboard') {
+              this.initChannelSalesChart();
+            }
+          });
         }
       } catch (error) {
         console.error('Error loading dashboard:', error);
       }
+    },
+
+    initChannelSalesChart() {
+      const canvas = document.getElementById('channelSalesChart');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+
+      // Destroy existing chart if any
+      if (this.channelSalesChart) {
+        this.channelSalesChart.destroy();
+      }
+
+      // Prepare data
+      const channelStats = this.dashboardData.channelStats || [];
+      const labels = channelStats.map(ch => ch.channelName);
+      const salesData = channelStats.map(ch => ch.totalSales);
+      const ordersData = channelStats.map(ch => ch.totalOrders);
+
+      // Chart colors
+      const colors = [
+        'rgb(147, 51, 234)',   // Purple
+        'rgb(236, 72, 153)',   // Pink
+        'rgb(59, 130, 246)',   // Blue
+        'rgb(34, 197, 94)',    // Green
+        'rgb(249, 115, 22)',   // Orange
+        'rgb(168, 85, 247)',   // Light Purple
+        'rgb(251, 146, 60)',   // Light Orange
+        'rgb(14, 165, 233)'    // Sky Blue
+      ];
+
+      this.channelSalesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'ยอดขาย (฿)',
+              data: salesData,
+              backgroundColor: colors,
+              borderColor: colors,
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const channel = channelStats[context.dataIndex];
+                  return [
+                    `ยอดขาย: ฿${channel.totalSales.toLocaleString()}`,
+                    `ออเดอร์: ${channel.totalOrders} รายการ`,
+                    `ค่าคอมมิชชั่น: ฿${channel.totalCommission.toLocaleString()}`,
+                    `กำไรสุทธิ: ฿${channel.netProfit.toLocaleString()}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '฿' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
     },
 
     async loadProducts() {
@@ -584,6 +676,21 @@ function coffeeShopApp() {
         if (response.success) {
           alert('บันทึกออเดอร์สำเร็จ! เลขที่: ' + response.data.orderNumber);
 
+          // Auto-print receipt
+          this.printReceipt({
+            orderNumber: response.data.orderNumber,
+            channelName: this.getChannelName(this.pos.selectedChannel),
+            items: this.pos.cart,
+            subtotal: this.pos.subtotal,
+            tax: this.pos.tax,
+            total: this.pos.total,
+            paymentMethod: this.payment.method,
+            received: this.payment.received,
+            change: this.payment.change,
+            cashier: this.username,
+            orderDate: new Date()
+          });
+
           // Clear cart and close modal
           this.pos.cart = [];
           this.updateCartTotals();
@@ -632,6 +739,79 @@ function coffeeShopApp() {
       });
     },
 
+    printReceipt(orderData) {
+      try {
+        // Prepare receipt data
+        const receiptData = {
+          shopName: this.shopName || 'COFFEE SHOP',
+          orderNumber: orderData.orderNumber,
+          channelName: orderData.channelName,
+          orderDate: orderData.orderDate,
+          cashier: orderData.cashier,
+          items: orderData.items.map(item => {
+            // Format variants display
+            let variantsText = '';
+            if (item.variants) {
+              const variants = typeof item.variants === 'string'
+                ? JSON.parse(item.variants)
+                : item.variants;
+              const parts = [];
+              if (variants.size) parts.push(variants.size);
+              if (variants.temperature) parts.push(variants.temperature);
+              if (variants.sweetness) parts.push(`หวาน ${variants.sweetness}`);
+              if (variants.shots) parts.push(`${variants.shots} shots`);
+              variantsText = parts.join(', ');
+            }
+
+            // Add addons if any
+            if (item.addons && item.addons.length > 0) {
+              const addons = typeof item.addons === 'string'
+                ? JSON.parse(item.addons)
+                : item.addons;
+              if (addons.length > 0) {
+                const addonNames = addons.map(a => a.name).join(', ');
+                variantsText += (variantsText ? ' + ' : '') + addonNames;
+              }
+            }
+
+            return {
+              productName: item.productName,
+              variants: variantsText,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.quantity * item.price
+            };
+          }),
+          subtotal: orderData.subtotal,
+          tax: orderData.tax,
+          deliveryFee: orderData.deliveryFee || 0,
+          total: orderData.total,
+          paymentMethod: orderData.paymentMethod,
+          received: orderData.received || 0,
+          change: orderData.change || 0
+        };
+
+        // Store in localStorage for receipt page to access
+        localStorage.setItem('receiptData', JSON.stringify(receiptData));
+
+        // Open receipt in new window
+        const receiptWindow = window.open(
+          'receipt-80mm.html?autoprint=true',
+          '_blank',
+          'width=400,height=600'
+        );
+
+        // Fallback: pass data via window.opener if localStorage fails
+        if (receiptWindow) {
+          receiptWindow.receiptData = receiptData;
+        }
+
+      } catch (error) {
+        console.error('Error printing receipt:', error);
+        alert('ไม่สามารถพิมพ์ใบเสร็จได้: ' + error.message);
+      }
+    },
+
 
     // ==================== ORDERS FUNCTIONS ====================
 
@@ -670,6 +850,56 @@ function coffeeShopApp() {
       // TODO: Implement order detail modal
       console.log('View order:', order);
       alert('รายละเอียดออเดอร์: ' + order.orderNumber);
+    },
+
+    async reprintOrder(order) {
+      try {
+        this.loading = true;
+
+        // Fetch order items
+        const response = await this.callAPI('getOrderItems', {
+          shopSheetId: this.shopSheetId,
+          orderId: order.id
+        });
+
+        if (response.success && response.data && response.data.length > 0) {
+          const items = response.data;
+
+          // Prepare order data for printing
+          const orderData = {
+            orderNumber: order.orderNumber,
+            channelName: order.channelName || order.channel,
+            orderDate: new Date(order.createdAt),
+            cashier: order.createdBy || 'พนักงาน',
+            items: items.map(item => ({
+              productName: item.productName,
+              variants: item.variants ? (typeof item.variants === 'string' ? JSON.parse(item.variants) : item.variants) : {},
+              addons: item.addons ? (typeof item.addons === 'string' ? JSON.parse(item.addons) : item.addons) : [],
+              quantity: item.quantity,
+              price: item.price
+            })),
+            subtotal: order.subtotal || 0,
+            tax: order.tax || 0,
+            deliveryFee: order.deliveryFee || 0,
+            total: order.totalAmount,
+            paymentMethod: order.paymentMethod || 'CASH',
+            received: order.amountReceived || 0,
+            change: order.change || 0
+          };
+
+          // Print receipt
+          this.printReceipt(orderData);
+
+        } else {
+          alert('ไม่พบรายการสินค้าในออเดอร์นี้');
+        }
+
+      } catch (error) {
+        console.error('Error reprinting order:', error);
+        alert('เกิดข้อผิดพลาดในการพิมพ์ใบเสร็จ');
+      } finally {
+        this.loading = false;
+      }
     },
 
 

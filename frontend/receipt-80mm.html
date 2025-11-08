@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ใบเสร็จ</title>
+  <style>
+    /* 80mm = 302px at 96 DPI */
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 80mm;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      padding: 10px;
+      background: white;
+    }
+
+    .receipt {
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .shop-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .shop-info {
+      font-size: 10px;
+      color: #333;
+    }
+
+    .order-info {
+      margin: 10px 0;
+      font-size: 11px;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 8px;
+    }
+
+    .order-info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .order-info-label {
+      font-weight: bold;
+    }
+
+    .items {
+      margin: 10px 0;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 8px;
+    }
+
+    .items-header {
+      font-weight: bold;
+      margin-bottom: 8px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .item {
+      margin-bottom: 8px;
+    }
+
+    .item-name {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .item-details {
+      font-size: 10px;
+      color: #555;
+      margin-left: 10px;
+      margin-bottom: 2px;
+    }
+
+    .item-price-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .totals {
+      margin: 10px 0;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 8px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .total-row.grand-total {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #000;
+    }
+
+    .payment-info {
+      margin: 10px 0;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 8px;
+    }
+
+    .payment-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 10px;
+    }
+
+    .thank-you {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .timestamp {
+      font-size: 9px;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    @media print {
+      body {
+        padding: 5px;
+      }
+
+      .no-print {
+        display: none;
+      }
+    }
+
+    .print-button {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 20px;
+      background: #8B5CF6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .print-button:hover {
+      background: #7C3AED;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-button no-print" onclick="window.print()">🖨️ พิมพ์ใบเสร็จ</button>
+
+  <div class="receipt">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="shop-name" id="shopName">COFFEE SHOP</div>
+      <div class="shop-info">ระบบ POS ร้านกาแฟ</div>
+      <div class="shop-info">โทร: 02-XXX-XXXX</div>
+    </div>
+
+    <!-- Order Info -->
+    <div class="order-info">
+      <div class="order-info-row">
+        <span class="order-info-label">เลขที่ออเดอร์:</span>
+        <span id="orderNumber">#0001</span>
+      </div>
+      <div class="order-info-row">
+        <span class="order-info-label">ช่องทาง:</span>
+        <span id="channelName">หน้าร้าน</span>
+      </div>
+      <div class="order-info-row">
+        <span class="order-info-label">วันที่:</span>
+        <span id="orderDate">08/01/2025 14:30</span>
+      </div>
+      <div class="order-info-row">
+        <span class="order-info-label">พนักงาน:</span>
+        <span id="cashier">Admin</span>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="items">
+      <div class="items-header">รายการสินค้า</div>
+      <div id="itemsList">
+        <!-- Items will be inserted here by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals">
+      <div class="total-row">
+        <span>ยอดรวม:</span>
+        <span id="subtotal">0.00</span>
+      </div>
+      <div class="total-row">
+        <span>ภาษี (7%):</span>
+        <span id="tax">0.00</span>
+      </div>
+      <div class="total-row" id="deliveryFeeRow" style="display: none;">
+        <span>ค่าส่ง:</span>
+        <span id="deliveryFee">0.00</span>
+      </div>
+      <div class="total-row grand-total">
+        <span>รวมทั้งสิ้น:</span>
+        <span id="total">0.00</span>
+      </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="payment-info">
+      <div class="payment-row">
+        <span class="order-info-label">ช่องทางชำระเงิน:</span>
+        <span id="paymentMethod">เงินสด</span>
+      </div>
+      <div class="payment-row" id="receivedRow">
+        <span>รับเงิน:</span>
+        <span id="received">0.00</span>
+      </div>
+      <div class="payment-row" id="changeRow">
+        <span>เงินทอน:</span>
+        <span id="change">0.00</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="thank-you">ขอบคุณที่ใช้บริการ</div>
+      <div>กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน</div>
+      <div class="timestamp" id="printTimestamp">พิมพ์เมื่อ: 08/01/2025 14:30:15</div>
+    </div>
+
+  </div>
+
+  <script>
+    // Get order data from URL parameters or window.opener
+    function loadReceiptData() {
+      try {
+        // Try to get data from window.opener (parent window)
+        if (window.opener && window.opener.receiptData) {
+          const data = window.opener.receiptData;
+          populateReceipt(data);
+          return;
+        }
+
+        // Try to get data from localStorage
+        const storedData = localStorage.getItem('receiptData');
+        if (storedData) {
+          const data = JSON.parse(storedData);
+          populateReceipt(data);
+          localStorage.removeItem('receiptData'); // Clear after use
+          return;
+        }
+
+        console.warn('No receipt data found');
+      } catch (error) {
+        console.error('Error loading receipt data:', error);
+      }
+    }
+
+    function populateReceipt(data) {
+      // Shop info
+      if (data.shopName) {
+        document.getElementById('shopName').textContent = data.shopName;
+      }
+
+      // Order info
+      document.getElementById('orderNumber').textContent = data.orderNumber || '#0001';
+      document.getElementById('channelName').textContent = data.channelName || 'หน้าร้าน';
+      document.getElementById('orderDate').textContent = formatDateTime(data.orderDate || new Date());
+      document.getElementById('cashier').textContent = data.cashier || 'พนักงาน';
+
+      // Items
+      const itemsList = document.getElementById('itemsList');
+      itemsList.innerHTML = '';
+
+      if (data.items && data.items.length > 0) {
+        data.items.forEach(item => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'item';
+
+          // Item name
+          const itemName = document.createElement('div');
+          itemName.className = 'item-name';
+          itemName.textContent = item.productName;
+          itemDiv.appendChild(itemName);
+
+          // Item details (variants)
+          if (item.variants) {
+            const details = document.createElement('div');
+            details.className = 'item-details';
+            details.textContent = item.variants;
+            itemDiv.appendChild(details);
+          }
+
+          // Item price row
+          const priceRow = document.createElement('div');
+          priceRow.className = 'item-price-row';
+          priceRow.innerHTML = `
+            <span>${item.quantity} x ${formatCurrency(item.price)}</span>
+            <span>${formatCurrency(item.total)}</span>
+          `;
+          itemDiv.appendChild(priceRow);
+
+          itemsList.appendChild(itemDiv);
+        });
+      }
+
+      // Totals
+      document.getElementById('subtotal').textContent = formatCurrency(data.subtotal || 0);
+      document.getElementById('tax').textContent = formatCurrency(data.tax || 0);
+
+      // Delivery fee (optional)
+      if (data.deliveryFee && data.deliveryFee > 0) {
+        document.getElementById('deliveryFeeRow').style.display = 'flex';
+        document.getElementById('deliveryFee').textContent = formatCurrency(data.deliveryFee);
+      }
+
+      document.getElementById('total').textContent = formatCurrency(data.total || 0);
+
+      // Payment
+      const paymentMethodText = {
+        'CASH': 'เงินสด',
+        'CARD': 'บัตรเครดิต/เดบิต',
+        'PROMPTPAY': 'พร้อมเพย์',
+        'TRANSFER': 'โอนเงิน'
+      };
+      document.getElementById('paymentMethod').textContent = paymentMethodText[data.paymentMethod] || data.paymentMethod || 'เงินสด';
+
+      // Show received/change only for cash
+      if (data.paymentMethod === 'CASH') {
+        document.getElementById('receivedRow').style.display = 'flex';
+        document.getElementById('changeRow').style.display = 'flex';
+        document.getElementById('received').textContent = formatCurrency(data.received || 0);
+        document.getElementById('change').textContent = formatCurrency(data.change || 0);
+      } else {
+        document.getElementById('receivedRow').style.display = 'none';
+        document.getElementById('changeRow').style.display = 'none';
+      }
+
+      // Print timestamp
+      document.getElementById('printTimestamp').textContent = 'พิมพ์เมื่อ: ' + formatDateTime(new Date());
+    }
+
+    function formatCurrency(amount) {
+      return '฿' + Number(amount).toFixed(2);
+    }
+
+    function formatDateTime(date) {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // Load data on page load
+    window.addEventListener('load', function() {
+      loadReceiptData();
+    });
+
+    // Auto-print if requested
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('autoprint') === 'true') {
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          window.print();
+        }, 500); // Small delay to ensure content is loaded
+      });
+    }
+  </script>
+
+</body>
+</html>

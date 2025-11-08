@@ -484,7 +484,7 @@
             <p class="text-gray-500">ภาพรวมการขายและสต็อกสินค้า</p>
           </div>
 
-          <!-- Stats Cards -->
+          <!-- Stats Cards - Row 1 -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 
             <!-- Total Sales -->
@@ -515,6 +515,20 @@
               <h3 class="text-2xl font-bold text-gray-800" x-text="dashboardData.totalOrders"></h3>
             </div>
 
+            <!-- Gross Profit -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-green-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.37,8.45 18.32,7.09L7.09,18.32C8.45,19.37 10.15,20 12,20Z" />
+                  </svg>
+                </div>
+                <span class="text-green-500 text-sm font-semibold">+15.7%</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">กำไรขั้นต้น</p>
+              <h3 class="text-2xl font-bold text-gray-800" x-text="formatCurrency(dashboardData.totalProfit)"></h3>
+            </div>
+
             <!-- Low Stock -->
             <div class="bg-white rounded-xl shadow-md p-6 card-hover">
               <div class="flex items-center justify-between mb-4">
@@ -529,18 +543,110 @@
               <h3 class="text-2xl font-bold text-gray-800" x-text="dashboardData.lowStockItems"></h3>
             </div>
 
-            <!-- Profit -->
-            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+          </div>
+
+          <!-- Stats Cards - Row 2 (Commission & Net Profit) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            <!-- Total Commission -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover border-l-4 border-red-500">
               <div class="flex items-center justify-between mb-4">
-                <div class="bg-green-100 rounded-lg p-3">
-                  <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.37,8.45 18.32,7.09L7.09,18.32C8.45,19.37 10.15,20 12,20Z" />
+                <div class="bg-red-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7,15H9C9,16.08 10.37,17 12,17C13.63,17 15,16.08 15,15C15,13.9 13.96,13.5 11.76,12.97C9.64,12.44 7,11.78 7,9C7,7.21 8.47,5.69 10.5,5.18V3H13.5V5.18C15.53,5.69 17,7.21 17,9H15C15,7.92 13.63,7 12,7C10.37,7 9,7.92 9,9C9,10.1 10.04,10.5 12.24,11.03C14.36,11.56 17,12.22 17,15C17,16.79 15.53,18.31 13.5,18.82V21H10.5V18.82C8.47,18.31 7,16.79 7,15Z" />
                   </svg>
                 </div>
-                <span class="text-green-500 text-sm font-semibold">+15.7%</span>
               </div>
-              <p class="text-gray-500 text-sm mb-1">กำไรวันนี้</p>
-              <h3 class="text-2xl font-bold text-gray-800" x-text="formatCurrency(dashboardData.totalProfit)"></h3>
+              <p class="text-gray-500 text-sm mb-1">ค่าคอมมิชชั่นรวม</p>
+              <h3 class="text-2xl font-bold text-red-600" x-text="formatCurrency(dashboardData.totalCommission)"></h3>
+              <p class="text-xs text-gray-400 mt-2">จากทุกช่องทางการขาย</p>
+            </div>
+
+            <!-- Net Profit -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover border-l-4 border-emerald-500">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-emerald-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7,2V4H8V18A4,4 0 0,0 12,22A4,4 0 0,0 16,18V4H17V2H7M11,16C10.4,16 10,15.6 10,15C10,14.4 10.4,14 11,14C11.6,14 12,14.4 12,15C12,15.6 11.6,16 11,16M13,12C12.4,12 12,11.6 12,11C12,10.4 12.4,10 13,10C13.6,10 14,10.4 14,11C14,11.6 13.6,12 13,12M14,7H10V4H14V7Z" />
+                  </svg>
+                </div>
+                <span class="text-emerald-500 text-sm font-semibold">สุทธิ</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">กำไรสุทธิ (หลังหักค่าคอม)</p>
+              <h3 class="text-2xl font-bold text-emerald-600" x-text="formatCurrency(dashboardData.netProfit)"></h3>
+              <p class="text-xs text-gray-400 mt-2">กำไรขั้นต้น - ค่าคอมมิชชั่น</p>
+            </div>
+
+          </div>
+
+          <!-- Channel Analytics Section -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+            <!-- Channel Sales Chart -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800">📊 ยอดขายตามช่องทาง</h3>
+                <span class="text-xs text-gray-400">วันนี้</span>
+              </div>
+              <div class="h-80">
+                <canvas id="channelSalesChart"></canvas>
+              </div>
+              <div x-show="!dashboardData.channelStats || dashboardData.channelStats.length === 0" class="h-80 flex items-center justify-center text-gray-400">
+                <div class="text-center">
+                  <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" />
+                  </svg>
+                  <p>ยังไม่มีข้อมูลการขาย</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Channels by Profit -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800">🏆 ช่องทางที่ทำกำไรมากสุด</h3>
+                <span class="text-xs text-gray-400">Top 5</span>
+              </div>
+              <div class="space-y-3">
+                <template x-for="(channel, index) in dashboardData.topChannelsByProfit" :key="index">
+                  <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full gradient-purple-pink flex items-center justify-center text-white font-bold text-sm" x-text="index + 1"></div>
+                        <div>
+                          <p class="font-semibold text-gray-800" x-text="channel.channelName"></p>
+                          <p class="text-xs text-gray-500" x-text="channel.totalOrders + ' ออเดอร์'"></p>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-bold text-emerald-600" x-text="formatCurrency(channel.netProfit)"></p>
+                        <p class="text-xs text-gray-500">กำไรสุทธิ</p>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-purple-200 text-xs">
+                      <div>
+                        <p class="text-gray-500">ยอดขาย</p>
+                        <p class="font-semibold text-gray-700" x-text="formatCurrency(channel.totalSales)"></p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">ค่าคอม</p>
+                        <p class="font-semibold text-red-600" x-text="formatCurrency(channel.totalCommission)"></p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">กำไรต้น</p>
+                        <p class="font-semibold text-green-600" x-text="formatCurrency(channel.grossProfit)"></p>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <div x-show="!dashboardData.topChannelsByProfit || dashboardData.topChannelsByProfit.length === 0" class="text-center py-8 text-gray-400">
+                  <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17V16H9V14H13A1,1 0 0,0 14,13V11A1,1 0 0,0 13,10H11V9H15V7H13V6H11V7H9A1,1 0 0,0 8,8V10A1,1 0 0,0 9,11H11V12H7V14H9V15H11V17H13V15H15V17H11Z" />
+                  </svg>
+                  <p>ยังไม่มีข้อมูล</p>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -829,9 +935,16 @@
                         }" class="badge" x-text="order.status === 'COMPLETED' ? 'เสร็จสิ้น' : 'ยกเลิก'"></span>
                       </td>
                       <td class="px-6 py-4 text-center">
-                        <button @click="viewOrderDetail(order)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
-                          ดูรายละเอียด
-                        </button>
+                        <div class="flex items-center justify-center space-x-2">
+                          <button @click="viewOrderDetail(order)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                            ดูรายละเอียด
+                          </button>
+                          <button @click="reprintOrder(order)" class="text-gray-600 hover:text-gray-800" title="พิมพ์ใบเสร็จซ้ำ">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </template>

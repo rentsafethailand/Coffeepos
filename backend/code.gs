@@ -2136,10 +2136,24 @@ function getDashboardData(params) {
     const ordersSheet = tenantSS.getSheetByName('Orders');
     const orderItemsSheet = tenantSS.getSheetByName('OrderItems');
     const inventorySheet = tenantSS.getSheetByName('InventoryItems');
+    const channelsSheet = tenantSS.getSheetByName('Channels');
 
     const ordersData = ordersSheet.getDataRange().getValues();
     const itemsData = orderItemsSheet.getDataRange().getValues();
     const inventoryData = inventorySheet.getDataRange().getValues();
+    const channelsData = channelsSheet.getDataRange().getValues();
+
+    // Build channels map for commission rates
+    const channelsMap = {};
+    for (let i = 1; i < channelsData.length; i++) {
+      channelsMap[channelsData[i][0]] = {  // channelId as key
+        channelId: channelsData[i][0],
+        channelName: channelsData[i][1],
+        channelType: channelsData[i][2],
+        commissionRate: channelsData[i][3],
+        deliveryFee: channelsData[i][4]
+      };
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -2147,8 +2161,10 @@ function getDashboardData(params) {
     let totalSales = 0;
     let totalOrders = 0;
     let totalProfit = 0;
+    let totalCommission = 0;
 
     const topProductsMap = {};
+    const channelStatsMap = {};  // NEW: Stats by channel
 
     // Calculate today's stats
     for (let i = 1; i < ordersData.length; i++) {
@@ -2157,14 +2173,46 @@ function getDashboardData(params) {
       orderDate.setHours(0, 0, 0, 0);
 
       if (orderDate.getTime() === today.getTime() && row[21] === 'COMPLETED') {
-        totalSales += row[15]; // total
+        const orderTotal = row[15]; // total
+        const channelId = row[2];   // channelId
+        const channelName = row[3]; // channelName
+
+        totalSales += orderTotal;
         totalOrders++;
 
-        // Find order items
+        // Calculate commission for this order
+        let commission = 0;
+        if (channelsMap[channelId]) {
+          commission = (orderTotal * channelsMap[channelId].commissionRate) / 100;
+          totalCommission += commission;
+        }
+
+        // Initialize channel stats if not exists
+        if (!channelStatsMap[channelId]) {
+          channelStatsMap[channelId] = {
+            channelId: channelId,
+            channelName: channelName,
+            channelType: channelsMap[channelId] ? channelsMap[channelId].channelType : 'UNKNOWN',
+            totalSales: 0,
+            totalOrders: 0,
+            totalCommission: 0,
+            grossProfit: 0,
+            netProfit: 0  // grossProfit - commission
+          };
+        }
+
+        // Update channel stats
+        channelStatsMap[channelId].totalSales += orderTotal;
+        channelStatsMap[channelId].totalOrders++;
+        channelStatsMap[channelId].totalCommission += commission;
+
+        // Find order items to calculate profit
         const orderId = row[0];
         for (let j = 1; j < itemsData.length; j++) {
           if (itemsData[j][1] === orderId) {
-            totalProfit += itemsData[j][13]; // profit
+            const itemProfit = itemsData[j][13]; // profit
+            totalProfit += itemProfit;
+            channelStatsMap[channelId].grossProfit += itemProfit;
 
             // Count top products
             const productName = itemsData[j][3];
@@ -2183,12 +2231,24 @@ function getDashboardData(params) {
             topProductsMap[productName].revenue += subtotal;
           }
         }
+
+        // Calculate net profit (after commission)
+        channelStatsMap[channelId].netProfit = channelStatsMap[channelId].grossProfit - channelStatsMap[channelId].totalCommission;
       }
     }
 
     // Top products
     const topProducts = Object.values(topProductsMap)
       .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Channel stats sorted by sales
+    const channelStats = Object.values(channelStatsMap)
+      .sort((a, b) => b.totalSales - a.totalSales);
+
+    // Top channels by net profit
+    const topChannelsByProfit = Object.values(channelStatsMap)
+      .sort((a, b) => b.netProfit - a.netProfit)
       .slice(0, 5);
 
     // Low stock items
@@ -2214,11 +2274,15 @@ function getDashboardData(params) {
         totalSales: totalSales,
         totalOrders: totalOrders,
         totalProfit: totalProfit,
+        totalCommission: totalCommission,       // NEW
+        netProfit: totalProfit - totalCommission,  // NEW
         lowStockItems: lowStockList.length,
         salesGrowth: 12.5, // Mock data
         ordersGrowth: 8.2, // Mock data
         topProducts: topProducts,
-        lowStockList: lowStockList
+        lowStockList: lowStockList,
+        channelStats: channelStats,             // NEW: All channels stats
+        topChannelsByProfit: topChannelsByProfit  // NEW: Top 5 by profit
       }
     };
 
