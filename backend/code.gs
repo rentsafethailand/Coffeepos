@@ -1658,22 +1658,72 @@ function createOrder(params) {
     const recipesSheet = tenantSS.getSheetByName('Recipes');
     const inventorySheet = tenantSS.getSheetByName('InventoryItems');
     const movementsSheet = tenantSS.getSheetByName('StockMovements');
+    const channelsSheet = tenantSS.getSheetByName('Channels');
 
-    // Generate order ID and number
-    const counter = parseInt(getSetting(settingsSheet, 'order_counter') || '0') + 1;
-    setSetting(settingsSheet, 'order_counter', counter.toString());
+    // Support both params.orderData and flat params
+    const orderData = params.orderData || params;
 
-    const orderId = 'ORD_' + formatOrderDate(new Date()) + '_' + String(counter).padStart(3, '0');
-    const orderNumber = '#' + String(counter).padStart(4, '0');
+    // Get channel info from Channels sheet
+    const channelsData = channelsSheet.getDataRange().getValues();
+    let channel = null;
 
-    const orderData = params.orderData;
+    for (let i = 1; i < channelsData.length; i++) {
+      if (channelsData[i][2] === params.channel) {  // Match channelType
+        channel = {
+          channelId: channelsData[i][0],
+          channelName: channelsData[i][1],
+          channelType: channelsData[i][2],
+          commissionRate: channelsData[i][3],
+          deliveryFee: channelsData[i][4],
+          isActive: channelsData[i][5],
+          orderNumberMode: channelsData[i][8] || 'AUTO',
+          orderNumberFormat: channelsData[i][9] || '#{NNNN}'
+        };
+        break;
+      }
+    }
+
+    // Fallback if channel not found
+    if (!channel) {
+      channel = {
+        channelId: 'CH_001',
+        channelName: 'หน้าร้าน',
+        channelType: 'POS',
+        commissionRate: 0,
+        deliveryFee: 0,
+        isActive: true,
+        orderNumberMode: 'AUTO',
+        orderNumberFormat: '#{NNNN}'
+      };
+    }
+
+    // Generate order ID
+    const orderId = 'ORD_' + formatOrderDate(new Date()) + '_' + Utilities.getUuid().substring(0, 8);
+
+    // Generate or use manual order number
+    let orderNumber;
+    if (channel.orderNumberMode === 'MANUAL') {
+      // Use manual order number from params
+      if (!params.manualOrderNumber) {
+        throw new Error('กรุณาระบุเลขที่ออเดอร์สำหรับช่องทาง ' + channel.channelName);
+      }
+      orderNumber = params.manualOrderNumber;
+    } else {
+      // AUTO mode: generate order number
+      const sequence = getNextOrderSequence(tenantSS, channel.channelId);
+      orderNumber = generateOrderNumber(channel.orderNumberFormat, sequence);
+    }
+
+    // Calculate commission and delivery fee
+    const commission = (orderData.subtotal * channel.commissionRate) / 100;
+    const deliveryFee = channel.deliveryFee || 0;
 
     // Create order
     const order = [
       orderId,
       orderNumber,
-      orderData.channelId || 'CH_001',
-      orderData.channelName || 'หน้าร้าน',
+      channel.channelId,        // Use channel from database
+      channel.channelName,      // Use channel from database
       orderData.customerId || null,
       orderData.customerName || null,
       orderData.staffId || 'STF_001',
@@ -1681,20 +1731,20 @@ function createOrder(params) {
       orderData.orderType || 'DINE_IN',
       orderData.tableNumber || '',
       orderData.queueNumber || '',
-      orderData.subtotal,
+      orderData.subtotal || params.subtotal,
       orderData.discount || 0,
-      orderData.tax || 0,
-      orderData.deliveryFee || 0,
-      orderData.total,
-      orderData.paymentMethod || 'CASH',
+      orderData.tax || params.tax || 0,
+      deliveryFee,             // Use calculated delivery fee
+      orderData.total || params.total,
+      orderData.paymentMethod || params.paymentMethod || 'CASH',
       'PAID',
-      orderData.receivedAmount || orderData.total,
-      orderData.changeAmount || 0,
-      orderData.slipImageUrl || '',
-      'PENDING',
+      orderData.receivedAmount || params.amountReceived || params.total,
+      orderData.changeAmount || params.change || 0,
+      orderData.slipImageUrl || params.slipUrl || '',
+      'COMPLETED',             // Changed from PENDING to COMPLETED
       orderData.notes || '',
       new Date(),
-      null,
+      new Date(),              // completedDate
       null,
       null
     ];
@@ -1702,11 +1752,31 @@ function createOrder(params) {
     ordersSheet.appendRow(order);
 
     // Create order items and deduct stock
-    const items = orderData.items || [];
+    const items = params.items || orderData.items || [];
     let orderItemCounter = 1;
 
     for (const item of items) {
       const orderItemId = orderId + '_ITEM_' + String(orderItemCounter++).padStart(3, '0');
+
+      // Parse variants and addons if they're strings
+      let variants = item.variants;
+      let addons = item.addons || item.modifiers || [];
+
+      if (typeof variants === 'string') {
+        try {
+          variants = JSON.parse(variants);
+        } catch (e) {
+          variants = {};
+        }
+      }
+
+      if (typeof addons === 'string') {
+        try {
+          addons = JSON.parse(addons);
+        } catch (e) {
+          addons = [];
+        }
+      }
 
       // Create order item
       const orderItem = [
@@ -1714,17 +1784,17 @@ function createOrder(params) {
         orderId,
         item.productId,
         item.productName,
-        JSON.stringify(item.variants || {}),
-        JSON.stringify(item.modifiers || []),
+        typeof variants === 'string' ? variants : JSON.stringify(variants),
+        typeof addons === 'string' ? addons : JSON.stringify(addons),
         item.variantText || '',
         item.specialInstructions || '',
         item.quantity,
-        item.unitPrice,
-        item.subtotal,
+        item.unitPrice || item.price,
+        item.subtotal || (item.price * item.quantity),
         item.cost || 0,
         (item.cost || 0) * item.quantity,
-        item.subtotal - ((item.cost || 0) * item.quantity),
-        'PENDING'
+        (item.subtotal || (item.price * item.quantity)) - ((item.cost || 0) * item.quantity),
+        'COMPLETED'
       ];
 
       orderItemsSheet.appendRow(orderItem);
@@ -2381,15 +2451,15 @@ function getChannels(params) {
         deliveryFee: row[4],
         isActive: row[5],
         settings: row[6],
-        createdDate: row[7]
+        createdDate: row[7],
+        orderNumberMode: row[8] || 'AUTO',       // AUTO or MANUAL
+        orderNumberFormat: row[9] || '#{NNNN}'   // Format for AUTO mode
       });
     }
 
     return {
       success: true,
-      data: {
-        channels: channels
-      }
+      data: channels  // Changed from { channels: channels }
     };
 
   } catch (error) {
@@ -2409,16 +2479,19 @@ function createChannel(params) {
     const sheet = tenantSS.getSheetByName('Channels');
 
     const channelId = 'CH_' + Utilities.getUuid().substring(0, 8);
+    const channelData = params.channel || params;  // Support both params.channel and direct params
 
     const channel = [
       channelId,
-      params.channelName,
-      params.channelType || 'OTHER',
-      params.commissionRate || 0,
-      params.deliveryFee || 0,
-      params.isActive !== false,
-      params.settings ? JSON.stringify(params.settings) : '{}',
-      new Date()
+      channelData.channelName,
+      channelData.channelType || 'OTHER',
+      channelData.commissionRate || 0,
+      channelData.deliveryFee || 0,
+      channelData.isActive !== false,
+      channelData.settings ? JSON.stringify(channelData.settings) : '{}',
+      new Date(),
+      channelData.orderNumberMode || 'AUTO',        // NEW: AUTO or MANUAL
+      channelData.orderNumberFormat || '#{NNNN}'    // NEW: Format template
     ];
 
     sheet.appendRow(channel);
@@ -2448,12 +2521,17 @@ function updateChannel(params) {
     const sheet = tenantSS.getSheetByName('Channels');
     const data = sheet.getDataRange().getValues();
 
+    const channelData = params.channel || params;  // Support both params.channel and direct params
+    const channelId = channelData.channelId || params.channelId;
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === params.channelId) {
-        if (params.channelName !== undefined) sheet.getRange(i + 1, 2).setValue(params.channelName);
-        if (params.commissionRate !== undefined) sheet.getRange(i + 1, 4).setValue(params.commissionRate);
-        if (params.deliveryFee !== undefined) sheet.getRange(i + 1, 5).setValue(params.deliveryFee);
-        if (params.isActive !== undefined) sheet.getRange(i + 1, 6).setValue(params.isActive);
+      if (data[i][0] === channelId) {
+        if (channelData.channelName !== undefined) sheet.getRange(i + 1, 2).setValue(channelData.channelName);
+        if (channelData.commissionRate !== undefined) sheet.getRange(i + 1, 4).setValue(channelData.commissionRate);
+        if (channelData.deliveryFee !== undefined) sheet.getRange(i + 1, 5).setValue(channelData.deliveryFee);
+        if (channelData.isActive !== undefined) sheet.getRange(i + 1, 6).setValue(channelData.isActive);
+        if (channelData.orderNumberMode !== undefined) sheet.getRange(i + 1, 9).setValue(channelData.orderNumberMode);  // NEW
+        if (channelData.orderNumberFormat !== undefined) sheet.getRange(i + 1, 10).setValue(channelData.orderNumberFormat);  // NEW
 
         return {
           success: true,
@@ -2472,6 +2550,78 @@ function updateChannel(params) {
       success: false,
       message: error.message
     };
+  }
+}
+
+// ==========================================
+// ORDER NUMBER GENERATION HELPERS
+// ==========================================
+
+/**
+ * Generate order number based on format template
+ * @param {string} format - Format template (e.g., "#{NNNN}", "ORD{YYYY}{MM}{DD}-{NNN}")
+ * @param {number} sequence - Current sequence number
+ * @returns {string} - Generated order number
+ */
+function generateOrderNumber(format, sequence) {
+  const now = new Date();
+
+  // Get date parts in GMT+7 (Thailand)
+  const year = Utilities.formatDate(now, 'GMT+7', 'yyyy');
+  const month = Utilities.formatDate(now, 'GMT+7', 'MM');
+  const day = Utilities.formatDate(now, 'GMT+7', 'dd');
+
+  // Replace date placeholders
+  let result = format
+    .replace('{YYYY}', year)
+    .replace('{MM}', month)
+    .replace('{DD}', day);
+
+  // Find and replace number placeholders {NNNN}
+  const numberMatch = result.match(/\{(N+)\}/);
+  if (numberMatch) {
+    const digits = numberMatch[1].length;  // จำนวนหลัก
+    const paddedNumber = String(sequence).padStart(digits, '0');
+    result = result.replace(/\{N+\}/, paddedNumber);
+  }
+
+  return result;
+}
+
+/**
+ * Get next sequence number for a channel
+ * @param {Spreadsheet} tenantSS - Tenant spreadsheet
+ * @param {string} channelId - Channel ID
+ * @returns {number} - Next sequence number
+ */
+function getNextOrderSequence(tenantSS, channelId) {
+  try {
+    const ordersSheet = tenantSS.getSheetByName('Orders');
+    const data = ordersSheet.getDataRange().getValues();
+
+    // Get today's date (GMT+7)
+    const today = new Date();
+    const todayStr = Utilities.formatDate(today, 'GMT+7', 'yyyy-MM-dd');
+
+    let maxSequence = 0;
+    for (let i = 1; i < data.length; i++) {
+      const orderChannelId = data[i][2];  // Column C: channelId
+      const orderDate = data[i][19];  // Column T: createdDate
+
+      if (orderDate) {
+        const orderDateStr = Utilities.formatDate(new Date(orderDate), 'GMT+7', 'yyyy-MM-dd');
+
+        // Count orders from this channel today
+        if (orderChannelId === channelId && orderDateStr === todayStr) {
+          maxSequence++;
+        }
+      }
+    }
+
+    return maxSequence + 1;
+  } catch (error) {
+    Logger.log('Error in getNextOrderSequence: ' + error.message);
+    return 1;  // Return 1 if error
   }
 }
 

@@ -581,7 +581,8 @@ function setupTenantSheetHeaders(sheet, sheetName) {
     case 'Channels':
       headers = [
         'channelId', 'channelName', 'channelType', 'commissionRate',
-        'deliveryFee', 'isActive', 'settings', 'createdDate'
+        'deliveryFee', 'isActive', 'settings', 'createdDate',
+        'orderNumberMode', 'orderNumberFormat'
       ];
       break;
 
@@ -899,10 +900,12 @@ function seedChannels(spreadsheet) {
   const sheet = spreadsheet.getSheetByName('Channels');
 
   const channels = [
-    ['CH_001', 'หน้าร้าน', 'POS', 0, 0, true, '{}', new Date()],
-    ['CH_002', 'LINE OA', 'LINE_OA', 0, 0, true, JSON.stringify({apiKey: '', webhook: ''}), new Date()],
-    ['CH_003', 'Grab Food', 'GRAB', 30, 0, true, JSON.stringify({partnerId: ''}), new Date()],
-    ['CH_004', 'Food Panda', 'FOODPANDA', 30, 0, false, JSON.stringify({partnerId: ''}), new Date()]
+    // [channelId, channelName, channelType, commissionRate, deliveryFee, isActive, settings, createdDate, orderNumberMode, orderNumberFormat]
+    ['CH_001', 'หน้าร้าน', 'POS', 0, 0, true, '{}', new Date(), 'AUTO', '#{NNNN}'],
+    ['CH_002', 'LINE OA', 'LINE_OA', 0, 0, true, JSON.stringify({apiKey: '', webhook: ''}), new Date(), 'AUTO', 'LINE{YYYY}{MM}{DD}-{NNN}'],
+    ['CH_003', 'Grab Food', 'GRAB', 30, 0, true, JSON.stringify({partnerId: ''}), new Date(), 'MANUAL', ''],
+    ['CH_004', 'Food Panda', 'FOODPANDA', 30, 15, false, JSON.stringify({partnerId: ''}), new Date(), 'MANUAL', ''],
+    ['CH_005', 'LINE MAN', 'LINEMAN', 25, 0, true, '{}', new Date(), 'MANUAL', '']
   ];
 
   sheet.getRange(2, 1, channels.length, channels[0].length).setValues(channels);
