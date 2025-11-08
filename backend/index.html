@@ -1202,19 +1202,19 @@
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-3">ขนาด</label>
           <div class="grid grid-cols-3 gap-3">
-            <button @click="selectedVariants.size = 'SMALL'" :class="selectedVariants.size === 'SMALL' ? 'selected' : ''" class="variant-btn">
+            <button @click="selectedVariants.size = 'SMALL'" :class="{'selected': selectedVariants.size === 'SMALL'}" class="variant-btn">
               <div class="text-center">
                 <p class="font-semibold">Small</p>
                 <p class="text-xs text-gray-500">เล็ก</p>
               </div>
             </button>
-            <button @click="selectedVariants.size = 'MEDIUM'" :class="selectedVariants.size === 'MEDIUM' ? 'selected' : ''" class="variant-btn">
+            <button @click="selectedVariants.size = 'MEDIUM'" :class="{'selected': selectedVariants.size === 'MEDIUM'}" class="variant-btn">
               <div class="text-center">
                 <p class="font-semibold">Medium</p>
                 <p class="text-xs text-gray-500">กลาง</p>
               </div>
             </button>
-            <button @click="selectedVariants.size = 'LARGE'" :class="selectedVariants.size === 'LARGE' ? 'selected' : ''" class="variant-btn">
+            <button @click="selectedVariants.size = 'LARGE'" :class="{'selected': selectedVariants.size === 'LARGE'}" class="variant-btn">
               <div class="text-center">
                 <p class="font-semibold">Large</p>
                 <p class="text-xs text-gray-500">ใหญ่ +10฿</p>
@@ -1227,7 +1227,7 @@
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-3">อุณหภูมิ</label>
           <div class="grid grid-cols-2 gap-3">
-            <button @click="selectedVariants.temperature = 'HOT'" :class="selectedVariants.temperature === 'HOT' ? 'selected' : ''" class="variant-btn">
+            <button @click="selectedVariants.temperature = 'HOT'" :class="{'selected': selectedVariants.temperature === 'HOT'}" class="variant-btn">
               <div class="flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M17.66,11.2C17.43,10.9 17.15,10.64 16.89,10.38C16.22,9.78 15.46,9.35 14.82,8.72C13.33,7.26 13,4.85 13.95,3C13,3.23 12.17,3.75 11.46,4.32C8.87,6.4 7.85,10.07 9.07,13.22C9.11,13.32 9.15,13.42 9.15,13.55C9.15,13.77 9,13.97 8.8,14.05C8.57,14.15 8.33,14.09 8.14,13.93C8.08,13.88 8.04,13.83 8,13.76C6.87,12.33 6.69,10.28 7.45,8.64C5.78,10 4.87,12.3 5,14.47C5.06,14.97 5.12,15.47 5.29,15.97C5.43,16.57 5.7,17.17 6,17.7C7.08,19.43 8.95,20.67 10.96,20.92C13.1,21.19 15.39,20.8 17.03,19.32C18.86,17.66 19.5,15 18.56,12.72L18.43,12.46C18.22,12 17.66,11.2 17.66,11.2M14.5,17.5C14.22,17.74 13.76,18 13.4,18.1C12.28,18.5 11.16,17.94 10.5,17.28C11.69,17 12.4,16.12 12.61,15.23C12.78,14.43 12.46,13.77 12.33,13C12.21,12.26 12.23,11.63 12.5,10.94C12.69,11.32 12.89,11.7 13.13,12C13.9,13 15.11,13.44 15.37,14.8C15.41,14.94 15.43,15.08 15.43,15.23C15.46,16.05 15.1,16.95 14.5,17.5H14.5Z" />
@@ -1235,7 +1235,7 @@
                 <span class="font-semibold">ร้อน (Hot)</span>
               </div>
             </button>
-            <button @click="selectedVariants.temperature = 'COLD'" :class="selectedVariants.temperature === 'COLD' ? 'selected' : ''" class="variant-btn">
+            <button @click="selectedVariants.temperature = 'COLD'" :class="{'selected': selectedVariants.temperature === 'COLD'}" class="variant-btn">
               <div class="flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12,11L10.29,8.83L11.71,7.42L12,7.71L12.29,7.42L13.71,8.83M12,2L10.5,3.5L11.5,4.5L10.5,5.5L11.5,6.5L10.5,7.5L12,9L13.5,7.5L12.5,6.5L13.5,5.5L12.5,4.5L13.5,3.5M7,12L5.5,10.5L4.5,11.5L3.5,10.5L2.5,11.5L1.5,10.5L0,12L1.5,13.5L2.5,12.5L3.5,13.5L4.5,12.5L5.5,13.5M16.5,10.5L15,12L16.5,13.5L17.5,12.5L18.5,13.5L19.5,12.5L20.5,13.5L22,12L20.5,10.5L19.5,11.5L18.5,10.5L17.5,11.5M8.83,13.71L7.42,12.29L7.71,12L7.42,11.71L8.83,10.29L10.29,11.76L12,10L13.71,11.76L15.17,10.29L16.58,11.71L16.29,12L16.58,12.29L15.17,13.71L13.71,12.24L12,14L10.29,12.24M11.71,16.58L12,16.29L12.29,16.58L13.71,15.17L15,17L13.5,18.5L12.5,17.5L11.5,18.5L12.5,19.5L11.5,20.5L12.5,21.5L11,23L9.5,21.5L10.5,20.5L9.5,19.5L10.5,18.5L9.5,17.5L8.5,18.5L7,17L8.29,15.17" />
@@ -1250,19 +1250,19 @@
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-3">ความหวาน</label>
           <div class="grid grid-cols-5 gap-2">
-            <button @click="selectedVariants.sweetness = '0%'" :class="selectedVariants.sweetness === '0%' ? 'selected' : ''" class="variant-btn py-3">
+            <button @click="selectedVariants.sweetness = '0%'" :class="{'selected': selectedVariants.sweetness === '0%'}" class="variant-btn py-3">
               <p class="font-semibold">0%</p>
             </button>
-            <button @click="selectedVariants.sweetness = '25%'" :class="selectedVariants.sweetness === '25%' ? 'selected' : ''" class="variant-btn py-3">
+            <button @click="selectedVariants.sweetness = '25%'" :class="{'selected': selectedVariants.sweetness === '25%'}" class="variant-btn py-3">
               <p class="font-semibold">25%</p>
             </button>
-            <button @click="selectedVariants.sweetness = '50%'" :class="selectedVariants.sweetness === '50%' ? 'selected' : ''" class="variant-btn py-3">
+            <button @click="selectedVariants.sweetness = '50%'" :class="{'selected': selectedVariants.sweetness === '50%'}" class="variant-btn py-3">
               <p class="font-semibold">50%</p>
             </button>
-            <button @click="selectedVariants.sweetness = '75%'" :class="selectedVariants.sweetness === '75%' ? 'selected' : ''" class="variant-btn py-3">
+            <button @click="selectedVariants.sweetness = '75%'" :class="{'selected': selectedVariants.sweetness === '75%'}" class="variant-btn py-3">
               <p class="font-semibold">75%</p>
             </button>
-            <button @click="selectedVariants.sweetness = '100%'" :class="selectedVariants.sweetness === '100%' ? 'selected' : ''" class="variant-btn py-3">
+            <button @click="selectedVariants.sweetness = '100%'" :class="{'selected': selectedVariants.sweetness === '100%'}" class="variant-btn py-3">
               <p class="font-semibold">100%</p>
             </button>
           </div>
@@ -1395,7 +1395,7 @@
             <div class="mb-4 p-4 bg-purple-50 rounded-lg">
               <p class="text-center text-sm font-bold text-gray-700 mb-3">สแกน QR Code เพื่อชำระเงิน</p>
               <div class="flex justify-center">
-                <img :src="'https://promptpay.io/' + settings.promptpay_number.replace(/[-\s]/g, '') + '/' + pos.total.toFixed(2) + '.png'" alt="PromptPay QR Code" class="border-4 border-white rounded-lg shadow-lg w-48 h-48">
+                <img :src="getPromptPayQRUrl()" alt="PromptPay QR Code" class="border-4 border-white rounded-lg shadow-lg w-48 h-48" @error="console.error('QR Code failed to load')">
               </div>
               <p class="text-center mt-3 text-lg font-bold text-purple-600" x-text="formatCurrency(pos.total)"></p>
               <p class="text-center text-xs text-gray-500 mt-1">พร้อมเพย์: <span x-text="settings.promptpay_number"></span></p>
@@ -2191,6 +2191,13 @@
         console.log('📸 [PAYMENT] Opening camera for slip capture');
         // เปิด camera input โดยการ trigger click บน hidden input
         this.$refs.cameraInput.click();
+      },
+
+      getPromptPayQRUrl() {
+        const ppUrl = "https://promptpay.io/";
+        const qrCodeNumber = this.settings.promptpay_number || '';
+        const amount = this.pos.total.toFixed(2);
+        return ppUrl + qrCodeNumber + ".png" + "/" + amount;
       },
 
       async confirmPayment() {
