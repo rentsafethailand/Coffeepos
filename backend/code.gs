@@ -30,8 +30,8 @@
 // ==========================================
 
 // ⚠️ แก้ไขค่าเหล่านี้หลังจากรัน setup.gs
-const MASTER_SHEET_ID = 'YOUR_MASTER_SHEET_ID_HERE'; // จาก setup.gs
-const MASTER_FOLDER_ID = 'YOUR_MASTER_FOLDER_ID_HERE'; // จาก setup.gs
+const MASTER_SHEET_ID = '1EXpcqYXYV5Q80P-fa0BYdxWIM3DrlxMgf0FpfcJukI'; // จาก setup.gs
+const MASTER_FOLDER_ID = '1KGhQwHfOF3-tW_R2Xv0IVRQvgKWjoecv'; // จาก setup.gs
 
 // Session timeout (minutes)
 const SESSION_TIMEOUT = 1440; // 24 hours
