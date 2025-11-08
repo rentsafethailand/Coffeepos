@@ -665,8 +665,8 @@
                         </svg>
                       </div>
                       <h4 class="font-semibold text-gray-800 mb-1" x-text="product.name"></h4>
-                      <p class="text-purple-600 font-bold" x-text="formatCurrency(product.price)"></p>
-                      <span x-show="!product.isActive" class="badge badge-danger text-xs mt-2 inline-block">ไม่พร้อมขาย</span>
+                      <p class="text-purple-600 font-bold" x-text="formatCurrency(product.basePrice || product.price)"></p>
+                      <span x-show="product.status !== 'ACTIVE' || product.isAvailable === false" class="badge badge-danger text-xs mt-2 inline-block">ไม่พร้อมขาย</span>
                     </div>
                   </template>
 
@@ -882,14 +882,14 @@
                       <h3 class="font-bold text-gray-800" x-text="product.name"></h3>
                       <p class="text-sm text-gray-500" x-text="product.category"></p>
                     </div>
-                    <span :class="product.isActive ? 'badge-success' : 'badge-danger'" class="badge" x-text="product.isActive ? 'เปิดขาย' : 'ปิดขาย'"></span>
+                    <span :class="product.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'" class="badge" x-text="product.status === 'ACTIVE' ? 'เปิดขาย' : 'ปิดขาย'"></span>
                   </div>
-                  <p class="text-purple-600 font-bold text-lg mb-3" x-text="formatCurrency(product.price)"></p>
+                  <p class="text-purple-600 font-bold text-lg mb-3" x-text="formatCurrency(product.basePrice || product.price)"></p>
                   <div class="flex space-x-2">
                     <button @click="editProduct(product)" class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm">
                       แก้ไข
                     </button>
-                    <button @click="toggleProductStatus(product)" class="flex-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm" x-text="product.isActive ? 'ปิดขาย' : 'เปิดขาย'">
+                    <button @click="toggleProductStatus(product)" class="flex-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm" x-text="product.status === 'ACTIVE' ? 'ปิดขาย' : 'เปิดขาย'">
                     </button>
                   </div>
                 </div>
@@ -1850,9 +1850,13 @@
 
           if (response.success) {
             this.products.list = response.data;
-            this.pos.allProducts = response.data.filter(p => p.isActive);
+            // Filter products: status = 'ACTIVE' AND isAvailable = true
+            this.pos.allProducts = response.data.filter(p =>
+              p.status === 'ACTIVE' && p.isAvailable !== false
+            );
             this.pos.filteredProducts = this.pos.allProducts;
             console.log('✅ [DATA] Loaded', response.data.length, 'products');
+            console.log('✅ [POS] Available products:', this.pos.allProducts.length);
           }
         } catch (error) {
           console.error('❌ [DATA] Error loading products:', error);
@@ -1964,7 +1968,8 @@
       },
 
       openVariantSelector(product) {
-        if (!product.isActive) {
+        // Check if product is available
+        if (product.status !== 'ACTIVE' || product.isAvailable === false) {
           this.showWarning('สินค้านี้ไม่พร้อมขาย');
           return;
         }
@@ -2233,132 +2238,212 @@
 
       // ==================== PRODUCTS FUNCTIONS ====================
 
-      async openProductModal() {
-        const { value: formValues } = await Swal.fire({
-          title: 'เพิ่มสินค้าใหม่',
-          html:
-            '<input id="swal-input1" class="swal2-input" placeholder="ชื่อสินค้า">' +
-            '<input id="swal-input2" class="swal2-input" type="number" placeholder="ราคา">' +
-            '<select id="swal-input3" class="swal2-input">' +
-            '<option value="">-- เลือกหมวดหมู่ --</option>' +
-            '<option value="COFFEE">กาแฟ</option>' +
-            '<option value="TEA">ชา</option>' +
-            '<option value="SMOOTHIE">สมูทตี้</option>' +
-            '<option value="BAKERY">เบเกอรี่</option>' +
-            '<option value="SNACK">ขนม</option>' +
-            '</select>',
-          focusConfirm: false,
-          showCancelButton: true,
-          confirmButtonText: 'เพิ่มสินค้า',
-          cancelButtonText: 'ยกเลิก',
-          preConfirm: () => {
-            const name = document.getElementById('swal-input1').value;
-            const price = document.getElementById('swal-input2').value;
-            const category = document.getElementById('swal-input3').value;
+      async openProductModal(product = null) {
+        const isEdit = !!product;
 
-            if (!name || !price || !category) {
-              Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+        const { value: formValues } = await Swal.fire({
+          title: isEdit ? '✏️ แก้ไขสินค้า' : '➕ เพิ่มสินค้าใหม่',
+          html: `
+            <div class="grid grid-cols-2 gap-4 text-left" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
+              <!-- ชื่อสินค้า -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium mb-1 text-gray-700">ชื่อสินค้า <span class="text-red-500">*</span></label>
+                <input id="swal-name" class="swal2-input w-full m-0" placeholder="เช่น กาแฟลาเต้" value="${product?.name || ''}">
+              </div>
+
+              <!-- SKU และ Barcode -->
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">รหัสสินค้า (SKU)</label>
+                <input id="swal-sku" class="swal2-input w-full m-0" placeholder="เช่น COFFEE001" value="${product?.sku || ''}">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">บาร์โค้ด</label>
+                <input id="swal-barcode" class="swal2-input w-full m-0" placeholder="เช่น 8859999999999" value="${product?.barcode || ''}">
+              </div>
+
+              <!-- หมวดหมู่ -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium mb-1 text-gray-700">หมวดหมู่ <span class="text-red-500">*</span></label>
+                <select id="swal-category" class="swal2-select w-full m-0" style="display: block;">
+                  <option value="">-- เลือกหมวดหมู่ --</option>
+                  <option value="COFFEE" ${product?.category === 'COFFEE' ? 'selected' : ''}>กาแฟ</option>
+                  <option value="TEA" ${product?.category === 'TEA' ? 'selected' : ''}>ชา</option>
+                  <option value="SMOOTHIE" ${product?.category === 'SMOOTHIE' ? 'selected' : ''}>สมูทตี้</option>
+                  <option value="BEVERAGE" ${product?.category === 'BEVERAGE' ? 'selected' : ''}>เครื่องดื่ม</option>
+                  <option value="FOOD" ${product?.category === 'FOOD' ? 'selected' : ''}>อาหาร</option>
+                  <option value="DESSERT" ${product?.category === 'DESSERT' ? 'selected' : ''}>ของหวาน</option>
+                  <option value="BAKERY" ${product?.category === 'BAKERY' ? 'selected' : ''}>เบเกอรี่</option>
+                  <option value="SNACK" ${product?.category === 'SNACK' ? 'selected' : ''}>ขนม</option>
+                </select>
+              </div>
+
+              <!-- ราคาและต้นทุน -->
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">ราคาขาย (บาท) <span class="text-red-500">*</span></label>
+                <input id="swal-price" type="number" step="0.01" class="swal2-input w-full m-0" placeholder="เช่น 45.00" value="${product?.basePrice || product?.price || 0}">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">ต้นทุน (บาท)</label>
+                <input id="swal-cost" type="number" step="0.01" class="swal2-input w-full m-0" placeholder="เช่น 20.00" value="${product?.cost || 0}">
+              </div>
+
+              <!-- คำอธิบาย -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium mb-1 text-gray-700">คำอธิบาย</label>
+                <textarea id="swal-description" class="swal2-textarea w-full m-0" rows="2" placeholder="รายละเอียดสินค้า...">${product?.description || ''}</textarea>
+              </div>
+
+              <!-- URL รูปภาพ -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium mb-1 text-gray-700">URL รูปภาพ</label>
+                <input id="swal-imageUrl" class="swal2-input w-full m-0" placeholder="https://example.com/image.jpg" value="${product?.imageUrl || ''}">
+              </div>
+
+              <!-- Checkboxes -->
+              <div class="col-span-2 space-y-2" style="margin-top: 10px;">
+                <label class="flex items-center cursor-pointer">
+                  <input id="swal-hasVariants" type="checkbox" class="mr-2" ${product?.hasVariants ? 'checked' : ''}>
+                  <span class="text-sm">มีตัวเลือก (Variants) เช่น ขนาด, อุณหภูมิ</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                  <input id="swal-hasModifiers" type="checkbox" class="mr-2" ${product?.hasModifiers ? 'checked' : ''}>
+                  <span class="text-sm">มีส่วนเสริม (Modifiers) เช่น เพิ่มช็อต, เพิ่มนม</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                  <input id="swal-isAvailable" type="checkbox" class="mr-2" ${product?.isAvailable !== false ? 'checked' : ''}>
+                  <span class="text-sm">พร้อมขาย (แสดงในหน้า POS)</span>
+                </label>
+              </div>
+
+              <!-- Status และ Sort Order -->
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">สถานะ <span class="text-red-500">*</span></label>
+                <select id="swal-status" class="swal2-select w-full m-0" style="display: block;">
+                  <option value="ACTIVE" ${!product || product?.status === 'ACTIVE' ? 'selected' : ''}>เปิดขาย</option>
+                  <option value="INACTIVE" ${product?.status === 'INACTIVE' ? 'selected' : ''}>ปิดขาย</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">ลำดับการแสดง</label>
+                <input id="swal-sortOrder" type="number" class="swal2-input w-full m-0" placeholder="999" value="${product?.sortOrder || 999}">
+              </div>
+
+              <!-- Tags -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium mb-1 text-gray-700">แท็ก (คั่นด้วยเครื่องหมายจุลภาค)</label>
+                <input id="swal-tags" class="swal2-input w-full m-0" placeholder="เช่น ขายดี, แนะนำ, ใหม่" value="${product?.tags || ''}">
+              </div>
+            </div>
+          `,
+          width: '800px',
+          showCancelButton: true,
+          confirmButtonText: isEdit ? '💾 บันทึก' : '➕ เพิ่มสินค้า',
+          cancelButtonText: '❌ ยกเลิก',
+          customClass: {
+            popup: 'swal-wide-popup'
+          },
+          preConfirm: () => {
+            const name = document.getElementById('swal-name').value.trim();
+            const sku = document.getElementById('swal-sku').value.trim();
+            const barcode = document.getElementById('swal-barcode').value.trim();
+            const category = document.getElementById('swal-category').value;
+            const basePrice = document.getElementById('swal-price').value;
+            const cost = document.getElementById('swal-cost').value;
+            const description = document.getElementById('swal-description').value.trim();
+            const imageUrl = document.getElementById('swal-imageUrl').value.trim();
+            const hasVariants = document.getElementById('swal-hasVariants').checked;
+            const hasModifiers = document.getElementById('swal-hasModifiers').checked;
+            const isAvailable = document.getElementById('swal-isAvailable').checked;
+            const status = document.getElementById('swal-status').value;
+            const sortOrder = document.getElementById('swal-sortOrder').value;
+            const tags = document.getElementById('swal-tags').value.trim();
+
+            // Validation
+            if (!name) {
+              Swal.showValidationMessage('❌ กรุณากรอกชื่อสินค้า');
+              return false;
+            }
+            if (!category) {
+              Swal.showValidationMessage('❌ กรุณาเลือกหมวดหมู่');
+              return false;
+            }
+            if (!basePrice || parseFloat(basePrice) < 0) {
+              Swal.showValidationMessage('❌ กรุณากรอกราคาขายที่ถูกต้อง');
               return false;
             }
 
-            return { name, price: parseFloat(price), category };
+            return {
+              sku,
+              barcode,
+              name,
+              description,
+              category,
+              basePrice: parseFloat(basePrice),
+              cost: cost ? parseFloat(cost) : 0,
+              imageUrl,
+              hasVariants,
+              hasModifiers,
+              status,
+              isAvailable,
+              sortOrder: sortOrder ? parseInt(sortOrder) : 999,
+              tags
+            };
           }
         });
 
         if (formValues) {
           try {
-            const response = await this.callAPI('createProduct', {
-              shopSheetId: this.shopSheetId,
-              product: {
-                name: formValues.name,
-                price: formValues.price,
-                category: formValues.category,
-                isActive: true
-              }
-            });
+            let response;
+            if (isEdit) {
+              // Update existing product
+              response = await this.callAPI('updateProduct', {
+                shopSheetId: this.shopSheetId,
+                productId: product.productId,
+                product: formValues
+              });
+            } else {
+              // Create new product
+              response = await this.callAPI('createProduct', {
+                shopSheetId: this.shopSheetId,
+                product: formValues
+              });
+            }
 
             if (response.success) {
-              this.showSuccess('เพิ่มสินค้าสำเร็จ');
+              this.showSuccess(isEdit ? '✅ แก้ไขสินค้าสำเร็จ' : '✅ เพิ่มสินค้าสำเร็จ');
               await this.loadProducts();
             } else {
-              this.showError(response.message);
+              this.showError(response.message || 'เกิดข้อผิดพลาด');
             }
           } catch (error) {
-            console.error('Error creating product:', error);
-            this.showError('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+            console.error('Error saving product:', error);
+            this.showError('เกิดข้อผิดพลาดในการบันทึกสินค้า');
           }
         }
       },
 
       async editProduct(product) {
-        const { value: formValues } = await Swal.fire({
-          title: 'แก้ไขสินค้า',
-          html:
-            `<input id="swal-input1" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.name}">` +
-            `<input id="swal-input2" class="swal2-input" type="number" placeholder="ราคา" value="${product.price}">` +
-            `<select id="swal-input3" class="swal2-input">` +
-            `<option value="COFFEE" ${product.category === 'COFFEE' ? 'selected' : ''}>กาแฟ</option>` +
-            `<option value="TEA" ${product.category === 'TEA' ? 'selected' : ''}>ชา</option>` +
-            `<option value="SMOOTHIE" ${product.category === 'SMOOTHIE' ? 'selected' : ''}>สมูทตี้</option>` +
-            `<option value="BAKERY" ${product.category === 'BAKERY' ? 'selected' : ''}>เบเกอรี่</option>` +
-            `<option value="SNACK" ${product.category === 'SNACK' ? 'selected' : ''}>ขนม</option>` +
-            `</select>`,
-          focusConfirm: false,
-          showCancelButton: true,
-          confirmButtonText: 'บันทึก',
-          cancelButtonText: 'ยกเลิก',
-          preConfirm: () => {
-            const name = document.getElementById('swal-input1').value;
-            const price = document.getElementById('swal-input2').value;
-            const category = document.getElementById('swal-input3').value;
-
-            if (!name || !price || !category) {
-              Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
-              return false;
-            }
-
-            return { name, price: parseFloat(price), category };
-          }
-        });
-
-        if (formValues) {
-          try {
-            const response = await this.callAPI('updateProduct', {
-              shopSheetId: this.shopSheetId,
-              productId: product.id,
-              product: {
-                name: formValues.name,
-                price: formValues.price,
-                category: formValues.category
-              }
-            });
-
-            if (response.success) {
-              this.showSuccess('แก้ไขสินค้าสำเร็จ');
-              await this.loadProducts();
-            } else {
-              this.showError(response.message);
-            }
-          } catch (error) {
-            console.error('Error updating product:', error);
-            this.showError('เกิดข้อผิดพลาดในการแก้ไขสินค้า');
-          }
-        }
+        // Redirect to openProductModal with product parameter
+        await this.openProductModal(product);
       },
 
       async toggleProductStatus(product) {
         try {
-          const newStatus = !product.isActive;
+          const newStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
           const response = await this.callAPI('updateProduct', {
             shopSheetId: this.shopSheetId,
-            productId: product.id,
-            isActive: newStatus
+            productId: product.productId,
+            product: {
+              status: newStatus
+            }
           });
 
           if (response.success) {
-            product.isActive = newStatus;
+            product.status = newStatus;
             this.showToast('success', 'เปลี่ยนสถานะสินค้าสำเร็จ');
             await this.loadProducts();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
           }
         } catch (error) {
           console.error('Error toggling product status:', error);
