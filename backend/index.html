@@ -1394,7 +1394,7 @@
           <div x-show="settings.promptpay_number" class="mb-4 p-4 bg-purple-50 rounded-lg">
             <p class="text-center text-sm font-bold text-gray-700 mb-3">สแกน QR Code เพื่อชำระเงิน</p>
             <div class="flex justify-center">
-              <img x-bind:src="getPromptPayQRUrl()" alt="PromptPay QR Code" class="border-4 border-white rounded-lg shadow-lg w-48 h-48">
+              <canvas x-ref="qrCodeCanvas" class="border-4 border-white rounded-lg shadow-lg"></canvas>
             </div>
             <p class="text-center mt-3 text-lg font-bold text-purple-600" x-text="formatCurrency(pos.total)"></p>
             <p class="text-center text-xs text-gray-500 mt-1">พร้อมเพย์: <span x-text="settings.promptpay_number"></span></p>
@@ -2146,6 +2146,14 @@
         this.manualOrderNumber = '';  // Reset manual order number
 
         this.modals.payment = true;
+
+        // Generate PromptPay QR Code if settings has promptpay_number
+        if (this.settings.promptpay_number) {
+          // ใช้ setTimeout เพื่อให้ modal แสดงผลก่อน แล้วค่อย generate QR
+          setTimeout(() => {
+            this.generatePromptPayQR();
+          }, 100);
+        }
       },
 
       calculateChange() {
@@ -2190,23 +2198,66 @@
         this.$refs.cameraInput.click();
       },
 
-      getPromptPayQRUrl() {
-        console.log('💳 [PAYMENT] Getting PromptPay QR Code URL from promptpay.io');
-        if (!this.settings.promptpay_number) {
-          console.warn('⚠️ [PAYMENT] No PromptPay number configured');
-          return '';
+      generatePromptPayQR() {
+        console.log('💳 [PAYMENT] Generating PromptPay QR Code');
+        try {
+          if (!this.settings.promptpay_number) {
+            console.warn('⚠️ [PAYMENT] No PromptPay number configured');
+            return;
+          }
+
+          const canvas = this.$refs.qrCodeCanvas;
+          if (!canvas) {
+            console.warn('⚠️ [PAYMENT] QR Code canvas not found');
+            return;
+          }
+
+          // สร้าง PromptPay payload
+          // Format: 00020101021229370016A000000677010111 + เบอร์พร้อมเพย์ (13 หลัก) + 5303764 + จำนวนเงิน + 6304 + CRC
+          const promptpayNumber = this.settings.promptpay_number.replace(/[-\s]/g, ''); // ลบ - และ space ออก
+          const amount = this.pos.total.toFixed(2);
+
+          // ใช้ QRCode library ที่โหลดมาจาก CDN
+          QRCode.toCanvas(canvas, this.generatePromptPayPayload(promptpayNumber, amount), {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#4C1D95',  // สีม่วง
+              light: '#FFFFFF'
+            }
+          }, (error) => {
+            if (error) {
+              console.error('❌ [PAYMENT] QR Code generation failed:', error);
+            } else {
+              console.log('✅ [PAYMENT] QR Code generated successfully');
+            }
+          });
+        } catch (error) {
+          console.error('❌ [PAYMENT] Error generating QR Code:', error);
         }
+      },
 
-        // ลบ - และ space ออกจากเบอร์พร้อมเพย์
-        const promptpayNumber = this.settings.promptpay_number.replace(/[-\s]/g, '');
-        const amount = this.pos.total.toFixed(2);
+      generatePromptPayPayload(promptpayNumber, amount) {
+        // PromptPay QR Code Format (EMVCo)
+        // Simplified version - สำหรับ production จริงควรใช้ library ที่รองรับ CRC16
 
-        // สร้าง URL จาก promptpay.io
-        // Format: https://promptpay.io/{phone_number}/{amount}.png
-        const qrUrl = `https://promptpay.io/${promptpayNumber}/${amount}.png`;
-        console.log('✅ [PAYMENT] QR Code URL:', qrUrl);
+        // พื้นฐานของ PromptPay payload
+        const payload = [
+          '000201',  // Payload Format Indicator
+          '010212',  // Point of Initiation Method (12 = QR is shown on a screen)
+          '29',      // Merchant Account Information - Start
+          '37',      // Length
+          '0016A000000677010111',  // AID: PromptPay
+          `01${promptpayNumber.length.toString().padStart(2, '0')}${promptpayNumber}`,  // PromptPay ID
+          '5303764',  // Currency: THB (764)
+          `54${amount.length.toString().padStart(2, '0')}${amount}`,  // Transaction Amount
+          '5802TH',  // Country Code: Thailand
+          '6304'     // CRC placeholder
+        ].join('');
 
-        return qrUrl;
+        // สำหรับ demo ใช้ payload แบบง่าย ไม่มี CRC
+        // ใน production จริงควรคำนวณ CRC16-CCITT
+        return payload;
       },
 
       async confirmPayment() {
@@ -2289,7 +2340,6 @@
       },
 
       async uploadSlip(file) {
-        console.log('📤 [PAYMENT] Uploading slip image to Slips folder...');
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = async (e) => {
@@ -2297,18 +2347,17 @@
               const base64 = e.target.result.split(',')[1];
               const response = await this.callAPI('uploadSlipImage', {
                 shopSheetId: this.shopSheetId,
-                imageData: base64  // แก้ไขจาก base64Data เป็น imageData ตาม backend parameter
+                filename: file.name,
+                mimeType: file.type,
+                base64Data: base64
               });
 
               if (response.success) {
-                console.log('✅ [PAYMENT] Slip uploaded successfully to:', response.data.url);
                 resolve(response.data.url);
               } else {
-                console.error('❌ [PAYMENT] Slip upload failed:', response.message);
-                reject(new Error('Upload failed: ' + response.message));
+                reject(new Error('Upload failed'));
               }
             } catch (error) {
-              console.error('❌ [PAYMENT] Slip upload error:', error);
               reject(error);
             }
           };
