@@ -46,6 +46,7 @@ function coffeeShopApp() {
       total: 0,
       searchQuery: '',
       selectedCategory: '',
+      selectedChannel: 'POS', // Default channel: POS (In-store)
       filteredProducts: [],
       allProducts: []
     },
@@ -535,7 +536,7 @@ function coffeeShopApp() {
         const response = await this.callAPI('createOrder', {
           shopSheetId: this.shopSheetId,
           username: this.username,
-          channel: 'POS',
+          channel: this.pos.selectedChannel,
           items: orderItems,
           subtotal: this.pos.subtotal,
           tax: this.pos.tax,

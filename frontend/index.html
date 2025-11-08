@@ -629,6 +629,15 @@
                     </svg>
                   </div>
 
+                  <!-- Channel Selector -->
+                  <select x-model="pos.selectedChannel" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                    <option value="POS">🏪 หน้าร้าน</option>
+                    <option value="GRAB">🛵 Grab Food</option>
+                    <option value="LINEMAN">📦 LINE MAN</option>
+                    <option value="FOODPANDA">🐼 Food Panda</option>
+                    <option value="ONLINE">🌐 สั่งออนไลน์</option>
+                  </select>
+
                   <!-- Category Filter -->
                   <select x-model="pos.selectedCategory" @change="filterProducts()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                     <option value="">ทุกหมวดหมู่</option>
@@ -776,8 +785,12 @@
 
               <select x-model="orders.filterChannel" @change="filterOrders()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                 <option value="">ทุกช่องทาง</option>
-                <option value="POS">หน้าร้าน</option>
-                <option value="DELIVERY">เดลิเวอรี่</option>
+                <option value="POS">🏪 หน้าร้าน</option>
+                <option value="GRAB">🛵 Grab Food</option>
+                <option value="LINEMAN">📦 LINE MAN</option>
+                <option value="FOODPANDA">🐼 Food Panda</option>
+                <option value="ONLINE">🌐 สั่งออนไลน์</option>
+                <option value="DELIVERY">🚚 เดลิเวอรี่</option>
               </select>
 
               <input type="text" x-model="orders.searchQuery" @input="filterOrders()" placeholder="ค้นหาออเดอร์..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
