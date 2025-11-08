@@ -35,7 +35,8 @@ function coffeeShopApp() {
       payment: false,
       orderDetail: false,
       productForm: false,
-      stockAdjust: false
+      stockAdjust: false,
+      channelForm: false
     },
 
     // POS
@@ -118,6 +119,25 @@ function coffeeShopApp() {
       printReceipt: true,
       autoDeductStock: true
     },
+
+    // Channels Management
+    channels: {
+      list: [],
+      editing: null,  // Channel being edited
+      form: {
+        channelId: '',
+        channelName: '',
+        channelType: 'POS',
+        orderNumberMode: 'AUTO',  // AUTO or MANUAL
+        orderNumberFormat: '#{NNNN}',  // Format for AUTO mode
+        commissionRate: 0,
+        deliveryFee: 0,
+        isActive: true
+      }
+    },
+
+    // Manual Order Number (for MANUAL channels)
+    manualOrderNumber: '',
 
     lowStockCount: 0,
 
@@ -353,6 +373,8 @@ function coffeeShopApp() {
         this.loadInventory();
       } else if (page === 'dashboard') {
         this.loadDashboard();
+      } else if (page === 'settings' && this.channels.list.length === 0) {
+        this.loadChannels();
       }
 
       // Close sidebar on mobile
@@ -484,6 +506,8 @@ function coffeeShopApp() {
         slipFile: null
       };
 
+      this.manualOrderNumber = '';  // Reset manual order number
+
       this.modals.payment = true;
     },
 
@@ -493,6 +517,15 @@ function coffeeShopApp() {
     },
 
     canConfirmPayment() {
+      // Check if manual order number is required
+      const channel = this.getChannelInfo(this.pos.selectedChannel);
+      if (channel && channel.orderNumberMode === 'MANUAL') {
+        if (!this.manualOrderNumber || this.manualOrderNumber.trim() === '') {
+          return false;
+        }
+      }
+
+      // Check payment method
       if (this.payment.method === 'CASH') {
         return parseFloat(this.payment.received) >= this.pos.total;
       } else if (this.payment.method === 'TRANSFER') {
@@ -537,6 +570,7 @@ function coffeeShopApp() {
           shopSheetId: this.shopSheetId,
           username: this.username,
           channel: this.pos.selectedChannel,
+          manualOrderNumber: this.manualOrderNumber || null,  // For MANUAL channels
           items: orderItems,
           subtotal: this.pos.subtotal,
           tax: this.pos.tax,
@@ -706,6 +740,102 @@ function coffeeShopApp() {
         console.error('Error saving settings:', error);
         alert('เกิดข้อผิดพลาดในการบันทึก');
       }
+    },
+
+
+    // ==================== CHANNELS MANAGEMENT FUNCTIONS ====================
+
+    async loadChannels() {
+      try {
+        const response = await this.callAPI('getChannels', {
+          shopSheetId: this.shopSheetId
+        });
+
+        if (response.success) {
+          this.channels.list = response.data;
+        }
+      } catch (error) {
+        console.error('Error loading channels:', error);
+      }
+    },
+
+    openAddChannelModal() {
+      this.channels.editing = null;
+      this.channels.form = {
+        channelId: '',
+        channelName: '',
+        channelType: 'POS',
+        orderNumberMode: 'AUTO',
+        orderNumberFormat: '#{NNNN}',
+        commissionRate: 0,
+        deliveryFee: 0,
+        isActive: true
+      };
+      this.modals.channelForm = true;
+    },
+
+    openEditChannelModal(channel) {
+      this.channels.editing = channel.channelId;
+      this.channels.form = { ...channel };
+      this.modals.channelForm = true;
+    },
+
+    async saveChannel() {
+      try {
+        const action = this.channels.editing ? 'updateChannel' : 'createChannel';
+
+        const response = await this.callAPI(action, {
+          shopSheetId: this.shopSheetId,
+          channel: this.channels.form
+        });
+
+        if (response.success) {
+          alert(this.channels.editing ? 'อัพเดทช่องทางสำเร็จ' : 'เพิ่มช่องทางสำเร็จ');
+          this.modals.channelForm = false;
+          await this.loadChannels();
+        } else {
+          alert('เกิดข้อผิดพลาด: ' + response.message);
+        }
+      } catch (error) {
+        console.error('Error saving channel:', error);
+        alert('เกิดข้อผิดพลาดในการบันทึก');
+      }
+    },
+
+    async toggleChannelStatus(channel) {
+      try {
+        const response = await this.callAPI('updateChannel', {
+          shopSheetId: this.shopSheetId,
+          channel: {
+            ...channel,
+            isActive: !channel.isActive
+          }
+        });
+
+        if (response.success) {
+          alert('อัพเดทสถานะสำเร็จ');
+          await this.loadChannels();
+        }
+      } catch (error) {
+        console.error('Error toggling channel:', error);
+        alert('เกิดข้อผิดพลาด');
+      }
+    },
+
+    getChannelInfo(channelType) {
+      const channel = this.channels.list.find(c => c.channelType === channelType);
+      return channel || null;
+    },
+
+    getChannelName(channelType) {
+      const channelNames = {
+        'POS': '🏪 หน้าร้าน',
+        'GRAB': '🛵 Grab Food',
+        'LINEMAN': '📦 LINE MAN',
+        'FOODPANDA': '🐼 Food Panda',
+        'ONLINE': '🌐 สั่งออนไลน์'
+      };
+      return channelNames[channelType] || channelType;
     },
 
 

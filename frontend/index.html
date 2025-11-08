@@ -1065,6 +1065,77 @@
             </div>
 
           </div>
+
+          <!-- Channels Management -->
+          <div class="mt-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">จัดการช่องทางการขาย</h3>
+                <button @click="openAddChannelModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition text-sm">
+                  + เพิ่มช่องทางใหม่
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ชื่อช่องทาง</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ประเภท</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">โหมดเลขออเดอร์</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">รูปแบบเลขออเดอร์</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ค่าคอมมิชชั่น</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">สถานะ</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="channel in channels.list" :key="channel.channelId">
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                          <span class="font-semibold text-gray-800" x-text="channel.channelName"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span x-text="channel.channelType"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span :class="channel.orderNumberMode === 'AUTO' ? 'badge badge-success' : 'badge badge-warning'"
+                                x-text="channel.orderNumberMode === 'AUTO' ? 'อัตโนมัติ' : 'กรอกเอง'"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span class="text-sm font-mono text-gray-600" x-text="channel.orderNumberMode === 'AUTO' ? channel.orderNumberFormat : '-'"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span x-text="channel.commissionRate + '%'"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span :class="channel.isActive ? 'badge badge-success' : 'badge badge-danger'"
+                                x-text="channel.isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน'"></span>
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="flex space-x-2">
+                            <button @click="openEditChannelModal(channel)"
+                                    class="text-blue-600 hover:text-blue-800 text-sm">แก้ไข</button>
+                            <button @click="toggleChannelStatus(channel)"
+                                    class="text-gray-600 hover:text-gray-800 text-sm"
+                                    x-text="channel.isActive ? 'ปิด' : 'เปิด'"></button>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+
+                    <tr x-show="channels.list.length === 0">
+                      <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                        <p>ยังไม่มีข้อมูลช่องทางการขาย</p>
+                        <p class="text-sm mt-2">คลิก "เพิ่มช่องทางใหม่" เพื่อเริ่มต้น</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </main>
@@ -1238,6 +1309,19 @@
           </div>
         </div>
 
+        <!-- Manual Order Number (for MANUAL channels) -->
+        <div x-show="getChannelInfo(pos.selectedChannel) && getChannelInfo(pos.selectedChannel).orderNumberMode === 'MANUAL'" class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">
+            เลขที่ออเดอร์จาก <span x-text="getChannelName(pos.selectedChannel)"></span>
+            <span class="text-red-500">*</span>
+          </label>
+          <input type="text"
+                 x-model="manualOrderNumber"
+                 placeholder="กรอกเลขที่ออเดอร์ เช่น GRAB-12345678"
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+          <p class="text-xs text-gray-500 mt-1">ต้องกรอกเลขที่ออเดอร์จากระบบภายนอก</p>
+        </div>
+
         <!-- Payment Method -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-3">วิธีการชำระเงิน</label>
@@ -1282,6 +1366,130 @@
           </button>
           <button @click="confirmPayment()" :disabled="!canConfirmPayment()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
             ยืนยันชำระเงิน
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Form Modal -->
+  <div x-show="modals.channelForm"
+       x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
+       @click.self="modals.channelForm = false">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+          <span x-text="channels.editing ? 'แก้ไขช่องทางการขาย' : 'เพิ่มช่องทางการขาย'"></span>
+        </h3>
+
+        <div class="space-y-4">
+          <!-- Channel Name -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">ชื่อช่องทาง <span class="text-red-500">*</span></label>
+            <input type="text"
+                   x-model="channels.form.channelName"
+                   placeholder="เช่น หน้าร้าน, Grab Food"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+          </div>
+
+          <!-- Channel Type -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">ประเภทช่องทาง <span class="text-red-500">*</span></label>
+            <select x-model="channels.form.channelType"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="POS">POS (หน้าร้าน)</option>
+              <option value="GRAB">Grab Food</option>
+              <option value="LINEMAN">LINE MAN</option>
+              <option value="FOODPANDA">Food Panda</option>
+              <option value="ONLINE">Online Order</option>
+              <option value="DELIVERY">Delivery (อื่นๆ)</option>
+            </select>
+          </div>
+
+          <!-- Order Number Mode -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">โหมดเลขที่ออเดอร์ <span class="text-red-500">*</span></label>
+            <div class="grid grid-cols-2 gap-3">
+              <button @click="channels.form.orderNumberMode = 'AUTO'"
+                      :class="channels.form.orderNumberMode === 'AUTO' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-300 text-gray-700'"
+                      class="p-4 border-2 rounded-lg hover:border-purple-400 transition text-left">
+                <div class="font-semibold mb-1">🤖 อัตโนมัติ (AUTO)</div>
+                <p class="text-xs text-gray-500">ระบบสร้างเลขออเดอร์เอง</p>
+              </button>
+              <button @click="channels.form.orderNumberMode = 'MANUAL'"
+                      :class="channels.form.orderNumberMode === 'MANUAL' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-300 text-gray-700'"
+                      class="p-4 border-2 rounded-lg hover:border-purple-400 transition text-left">
+                <div class="font-semibold mb-1">✍️ กรอกเอง (MANUAL)</div>
+                <p class="text-xs text-gray-500">ใส่เลขออเดอร์จากภายนอก</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- Order Number Format (for AUTO mode) -->
+          <div x-show="channels.form.orderNumberMode === 'AUTO'">
+            <label class="block text-sm font-bold text-gray-700 mb-2">รูปแบบเลขที่ออเดอร์</label>
+            <input type="text"
+                   x-model="channels.form.orderNumberFormat"
+                   placeholder="#{NNNN}"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono">
+            <div class="mt-2 p-3 bg-blue-50 rounded-lg text-sm">
+              <p class="font-semibold text-blue-800 mb-2">รูปแบบที่รองรับ:</p>
+              <ul class="text-blue-700 space-y-1 text-xs">
+                <li><code class="bg-white px-1 rounded">#{NNNN}</code> → #0001, #0002, ...</li>
+                <li><code class="bg-white px-1 rounded">ORD{YYYY}{MM}{DD}-{NNN}</code> → ORD20250108-001</li>
+                <li><code class="bg-white px-1 rounded">{YYYY}-{MM}-{DD}-{NNNNN}</code> → 2025-01-08-00001</li>
+                <li><code class="bg-white px-1 rounded">{NNNN}</code> → 0001, 0002, ...</li>
+              </ul>
+              <p class="text-xs text-blue-600 mt-2">
+                <strong>{YYYY}</strong>=ปี, <strong>{MM}</strong>=เดือน, <strong>{DD}</strong>=วัน, <strong>{NNNN}</strong>=เลขลำดับ (จำนวน N = จำนวนหลัก)
+              </p>
+            </div>
+          </div>
+
+          <!-- Commission Rate -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">ค่าคอมมิชชั่น (%)</label>
+            <input type="number"
+                   x-model="channels.form.commissionRate"
+                   min="0"
+                   max="100"
+                   step="0.01"
+                   placeholder="0"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <p class="text-xs text-gray-500 mt-1">เช่น Grab เก็บ 30%, LINE MAN เก็บ 25%</p>
+          </div>
+
+          <!-- Delivery Fee -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">ค่าจัดส่ง (บาท)</label>
+            <input type="number"
+                   x-model="channels.form.deliveryFee"
+                   min="0"
+                   step="1"
+                   placeholder="0"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+          </div>
+
+          <!-- Active Status -->
+          <div class="flex items-center">
+            <input type="checkbox"
+                   x-model="channels.form.isActive"
+                   id="channelActive"
+                   class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+            <label for="channelActive" class="ml-2 text-sm text-gray-700">เปิดใช้งาน</label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3 mt-6">
+          <button @click="modals.channelForm = false"
+                  class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+            ยกเลิก
+          </button>
+          <button @click="saveChannel()"
+                  class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            <span x-text="channels.editing ? 'บันทึกการแก้ไข' : 'เพิ่มช่องทาง'"></span>
           </button>
         </div>
       </div>
