@@ -14,6 +14,10 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <!-- Google Fonts - Sarabun -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -925,26 +929,41 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                  <template x-for="item in inventory.list" :key="item.id">
-                    <tr class="hover:bg-purple-50 transition" :class="{'bg-orange-50': item.stock <= item.reorderPoint}">
-                      <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="item.sku"></td>
-                      <td class="px-6 py-4 text-sm font-medium text-gray-800" x-text="item.name"></td>
-                      <td class="px-6 py-4 text-center">
-                        <span class="text-lg font-bold" :class="item.stock <= item.reorderPoint ? 'text-orange-600' : 'text-gray-800'" x-text="item.stock"></span>
-                      </td>
-                      <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.unit"></td>
-                      <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.reorderPoint"></td>
-                      <td class="px-6 py-4 text-center">
-                        <span :class="{
-                          'badge-success': item.stock > item.reorderPoint,
-                          'badge-warning': item.stock <= item.reorderPoint && item.stock > 0,
-                          'badge-danger': item.stock <= 0
-                        }" class="badge" x-text="item.stock > item.reorderPoint ? 'ปกติ' : (item.stock > 0 ? 'ใกล้หมด' : 'หมด')"></span>
-                      </td>
-                      <td class="px-6 py-4 text-center">
-                        <button @click="adjustStock(item)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
-                          ปรับสต็อก
-                        </button>
+                  <template x-if="inventory.list && inventory.list.length > 0">
+                    <template x-for="item in inventory.list" :key="item.id">
+                      <tr class="hover:bg-purple-50 transition" :class="{'bg-orange-50': item.stock <= item.reorderPoint}">
+                        <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="item.sku"></td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800" x-text="item.name"></td>
+                        <td class="px-6 py-4 text-center">
+                          <span class="text-lg font-bold" :class="item.stock <= item.reorderPoint ? 'text-orange-600' : 'text-gray-800'" x-text="item.stock"></span>
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.unit"></td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.reorderPoint"></td>
+                        <td class="px-6 py-4 text-center">
+                          <span :class="{
+                            'badge-success': item.stock > item.reorderPoint,
+                            'badge-warning': item.stock <= item.reorderPoint && item.stock > 0,
+                            'badge-danger': item.stock <= 0
+                          }" class="badge" x-text="item.stock > item.reorderPoint ? 'ปกติ' : (item.stock > 0 ? 'ใกล้หมด' : 'หมด')"></span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                          <button @click="adjustStock(item)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                            ปรับสต็อก
+                          </button>
+                        </td>
+                      </tr>
+                    </template>
+                  </template>
+                  <template x-if="!inventory.list || inventory.list.length === 0">
+                    <tr>
+                      <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center justify-center text-gray-400">
+                          <svg class="w-16 h-16 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20" />
+                          </svg>
+                          <p class="text-lg font-semibold mb-1">ยังไม่มีข้อมูลคลังสินค้า</p>
+                          <p class="text-sm">เริ่มต้นใช้งานโดยการเพิ่มวัตถุดิบเข้าสู่ระบบ</p>
+                        </div>
                       </td>
                     </tr>
                   </template>
@@ -1946,7 +1965,7 @@
 
       openVariantSelector(product) {
         if (!product.isActive) {
-          alert('สินค้านี้ไม่พร้อมขาย');
+          this.showWarning('สินค้านี้ไม่พร้อมขาย');
           return;
         }
 
@@ -2120,7 +2139,7 @@
 
           if (response.success) {
             console.log('✅ [PAYMENT] Order created successfully:', response.data.orderNumber);
-            alert('บันทึกออเดอร์สำเร็จ! เลขที่: ' + response.data.orderNumber);
+            this.showSuccess('บันทึกออเดอร์สำเร็จ! เลขที่: ' + response.data.orderNumber);
 
             // Clear cart and close modal
             this.pos.cart = [];
@@ -2133,12 +2152,12 @@
 
           } else {
             console.error('❌ [PAYMENT] Order creation failed:', response.message);
-            alert('เกิดข้อผิดพลาด: ' + response.message);
+            this.showError(response.message);
           }
 
         } catch (error) {
           console.error('❌ [PAYMENT] Payment error:', error);
-          alert('เกิดข้อผิดพลาดในการชำระเงิน');
+          this.showError('เกิดข้อผิดพลาดในการชำระเงิน');
         } finally {
           this.loading = false;
         }
@@ -2208,21 +2227,123 @@
       viewOrderDetail(order) {
         // TODO: Implement order detail modal
         console.log('View order:', order);
-        alert('รายละเอียดออเดอร์: ' + order.orderNumber);
+        this.showToast('info', 'รายละเอียดออเดอร์: ' + order.orderNumber);
       },
 
 
       // ==================== PRODUCTS FUNCTIONS ====================
 
-      openProductModal() {
-        // TODO: Implement product form modal
-        alert('ฟีเจอร์เพิ่มสินค้าจะเปิดใช้งานในเร็วๆ นี้');
+      async openProductModal() {
+        const { value: formValues } = await Swal.fire({
+          title: 'เพิ่มสินค้าใหม่',
+          html:
+            '<input id="swal-input1" class="swal2-input" placeholder="ชื่อสินค้า">' +
+            '<input id="swal-input2" class="swal2-input" type="number" placeholder="ราคา">' +
+            '<select id="swal-input3" class="swal2-input">' +
+            '<option value="">-- เลือกหมวดหมู่ --</option>' +
+            '<option value="COFFEE">กาแฟ</option>' +
+            '<option value="TEA">ชา</option>' +
+            '<option value="SMOOTHIE">สมูทตี้</option>' +
+            '<option value="BAKERY">เบเกอรี่</option>' +
+            '<option value="SNACK">ขนม</option>' +
+            '</select>',
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: 'เพิ่มสินค้า',
+          cancelButtonText: 'ยกเลิก',
+          preConfirm: () => {
+            const name = document.getElementById('swal-input1').value;
+            const price = document.getElementById('swal-input2').value;
+            const category = document.getElementById('swal-input3').value;
+
+            if (!name || !price || !category) {
+              Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+              return false;
+            }
+
+            return { name, price: parseFloat(price), category };
+          }
+        });
+
+        if (formValues) {
+          try {
+            const response = await this.callAPI('createProduct', {
+              shopSheetId: this.shopSheetId,
+              product: {
+                name: formValues.name,
+                price: formValues.price,
+                category: formValues.category,
+                isActive: true
+              }
+            });
+
+            if (response.success) {
+              this.showSuccess('เพิ่มสินค้าสำเร็จ');
+              await this.loadProducts();
+            } else {
+              this.showError(response.message);
+            }
+          } catch (error) {
+            console.error('Error creating product:', error);
+            this.showError('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+          }
+        }
       },
 
-      editProduct(product) {
-        // TODO: Implement product edit
-        console.log('Edit product:', product);
-        alert('แก้ไขสินค้า: ' + product.name);
+      async editProduct(product) {
+        const { value: formValues } = await Swal.fire({
+          title: 'แก้ไขสินค้า',
+          html:
+            `<input id="swal-input1" class="swal2-input" placeholder="ชื่อสินค้า" value="${product.name}">` +
+            `<input id="swal-input2" class="swal2-input" type="number" placeholder="ราคา" value="${product.price}">` +
+            `<select id="swal-input3" class="swal2-input">` +
+            `<option value="COFFEE" ${product.category === 'COFFEE' ? 'selected' : ''}>กาแฟ</option>` +
+            `<option value="TEA" ${product.category === 'TEA' ? 'selected' : ''}>ชา</option>` +
+            `<option value="SMOOTHIE" ${product.category === 'SMOOTHIE' ? 'selected' : ''}>สมูทตี้</option>` +
+            `<option value="BAKERY" ${product.category === 'BAKERY' ? 'selected' : ''}>เบเกอรี่</option>` +
+            `<option value="SNACK" ${product.category === 'SNACK' ? 'selected' : ''}>ขนม</option>` +
+            `</select>`,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: 'บันทึก',
+          cancelButtonText: 'ยกเลิก',
+          preConfirm: () => {
+            const name = document.getElementById('swal-input1').value;
+            const price = document.getElementById('swal-input2').value;
+            const category = document.getElementById('swal-input3').value;
+
+            if (!name || !price || !category) {
+              Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+              return false;
+            }
+
+            return { name, price: parseFloat(price), category };
+          }
+        });
+
+        if (formValues) {
+          try {
+            const response = await this.callAPI('updateProduct', {
+              shopSheetId: this.shopSheetId,
+              productId: product.id,
+              product: {
+                name: formValues.name,
+                price: formValues.price,
+                category: formValues.category
+              }
+            });
+
+            if (response.success) {
+              this.showSuccess('แก้ไขสินค้าสำเร็จ');
+              await this.loadProducts();
+            } else {
+              this.showError(response.message);
+            }
+          } catch (error) {
+            console.error('Error updating product:', error);
+            this.showError('เกิดข้อผิดพลาดในการแก้ไขสินค้า');
+          }
+        }
       },
 
       async toggleProductStatus(product) {
@@ -2236,27 +2357,84 @@
 
           if (response.success) {
             product.isActive = newStatus;
-            alert('เปลี่ยนสถานะสินค้าสำเร็จ');
+            this.showToast('success', 'เปลี่ยนสถานะสินค้าสำเร็จ');
             await this.loadProducts();
           }
         } catch (error) {
           console.error('Error toggling product status:', error);
-          alert('เกิดข้อผิดพลาด');
+          this.showError('เกิดข้อผิดพลาด');
         }
       },
 
 
       // ==================== INVENTORY FUNCTIONS ====================
 
-      openStockAdjustModal() {
-        // TODO: Implement stock adjust modal
-        alert('ฟีเจอร์ปรับสต็อกจะเปิดใช้งานในเร็วๆ นี้');
+      async openStockAdjustModal() {
+        this.showToast('info', 'กรุณาเลือกรายการที่ต้องการปรับสต็อกจากตาราง');
       },
 
-      adjustStock(item) {
-        // TODO: Implement stock adjustment
-        console.log('Adjust stock:', item);
-        alert('ปรับสต็อก: ' + item.name);
+      async adjustStock(item) {
+        const { value: formValues } = await Swal.fire({
+          title: `ปรับสต็อก: ${item.name}`,
+          html:
+            `<div class="text-left mb-4">` +
+            `<p class="text-sm text-gray-600">สต็อกปัจจุบัน: <strong>${item.stock} ${item.unit}</strong></p>` +
+            `</div>` +
+            `<select id="swal-adjust-type" class="swal2-input">` +
+            `<option value="ADD">เพิ่มสต็อก (+)</option>` +
+            `<option value="REMOVE">ลดสต็อก (-)</option>` +
+            `<option value="SET">กำหนดสต็อกใหม่</option>` +
+            `</select>` +
+            `<input id="swal-adjust-amount" class="swal2-input" type="number" placeholder="จำนวน" min="0">` +
+            `<textarea id="swal-adjust-note" class="swal2-textarea" placeholder="หมายเหตุ (ไม่บังคับ)"></textarea>`,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: 'บันทึก',
+          cancelButtonText: 'ยกเลิก',
+          preConfirm: () => {
+            const adjustType = document.getElementById('swal-adjust-type').value;
+            const amount = document.getElementById('swal-adjust-amount').value;
+            const note = document.getElementById('swal-adjust-note').value;
+
+            if (!amount || parseFloat(amount) < 0) {
+              Swal.showValidationMessage('กรุณากรอกจำนวนที่ถูกต้อง');
+              return false;
+            }
+
+            return { adjustType, amount: parseFloat(amount), note };
+          }
+        });
+
+        if (formValues) {
+          try {
+            let newStock = item.stock;
+            if (formValues.adjustType === 'ADD') {
+              newStock = item.stock + formValues.amount;
+            } else if (formValues.adjustType === 'REMOVE') {
+              newStock = item.stock - formValues.amount;
+              if (newStock < 0) newStock = 0;
+            } else if (formValues.adjustType === 'SET') {
+              newStock = formValues.amount;
+            }
+
+            const response = await this.callAPI('updateInventory', {
+              shopSheetId: this.shopSheetId,
+              inventoryId: item.id,
+              stock: newStock,
+              note: formValues.note
+            });
+
+            if (response.success) {
+              this.showToast('success', 'ปรับสต็อกสำเร็จ');
+              await this.loadInventory();
+            } else {
+              this.showError(response.message);
+            }
+          } catch (error) {
+            console.error('Error adjusting stock:', error);
+            this.showError('เกิดข้อผิดพลาดในการปรับสต็อก');
+          }
+        }
       },
 
 
@@ -2270,14 +2448,14 @@
           });
 
           if (response.success) {
-            alert('บันทึกการตั้งค่าสำเร็จ');
+            this.showToast('success', 'บันทึกการตั้งค่าสำเร็จ');
             this.shopName = this.settings.shopName;
           } else {
-            alert('เกิดข้อผิดพลาด: ' + response.message);
+            this.showError(response.message);
           }
         } catch (error) {
           console.error('Error saving settings:', error);
-          alert('เกิดข้อผิดพลาดในการบันทึก');
+          this.showError('เกิดข้อผิดพลาดในการบันทึก');
         }
       },
 
@@ -2331,15 +2509,15 @@
           });
 
           if (response.success) {
-            alert(this.channels.editing ? 'อัพเดทช่องทางสำเร็จ' : 'เพิ่มช่องทางสำเร็จ');
+            this.showToast('success', this.channels.editing ? 'อัพเดทช่องทางสำเร็จ' : 'เพิ่มช่องทางสำเร็จ');
             this.modals.channelForm = false;
             await this.loadChannels();
           } else {
-            alert('เกิดข้อผิดพลาด: ' + response.message);
+            this.showError(response.message);
           }
         } catch (error) {
           console.error('Error saving channel:', error);
-          alert('เกิดข้อผิดพลาดในการบันทึก');
+          this.showError('เกิดข้อผิดพลาดในการบันทึก');
         }
       },
 
@@ -2354,12 +2532,12 @@
           });
 
           if (response.success) {
-            alert('อัพเดทสถานะสำเร็จ');
+            this.showToast('success', 'อัพเดทสถานะสำเร็จ');
             await this.loadChannels();
           }
         } catch (error) {
           console.error('Error toggling channel:', error);
-          alert('เกิดข้อผิดพลาด');
+          this.showError('เกิดข้อผิดพลาด');
         }
       },
 
@@ -2398,6 +2576,49 @@
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
+        });
+      },
+
+      // Toast notification helper
+      showToast(icon, title) {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+          }
+        });
+
+        Toast.fire({ icon, title });
+      },
+
+      showSuccess(message) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ!',
+          text: message,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      },
+
+      showError(message) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: message
+        });
+      },
+
+      showWarning(message) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'แจ้งเตือน',
+          text: message
         });
       },
 
