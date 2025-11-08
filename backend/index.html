@@ -937,12 +937,79 @@
               <h2 class="text-2xl font-bold text-gray-800">จัดการคลังสินค้า</h2>
               <p class="text-gray-500">ติดตามและจัดการสต็อกวัตถุดิบ</p>
             </div>
-            <button @click="openStockAdjustModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
-              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
-              </svg>
-              ปรับสต็อก
-            </button>
+            <div class="flex space-x-3">
+              <button @click="openInventoryItemForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                </svg>
+                เพิ่มวัตถุดิบ
+              </button>
+              <button @click="openStockAdjustModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                </svg>
+                ปรับสต็อก
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500">ทั้งหมด</p>
+                  <p class="text-2xl font-bold text-gray-800" x-text="inventory.list.length"></p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500">ปกติ</p>
+                  <p class="text-2xl font-bold text-green-600" x-text="inventory.list.filter(i => i.currentStock > i.reorderPoint).length"></p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500">ใกล้หมด</p>
+                  <p class="text-2xl font-bold text-orange-600" x-text="inventory.list.filter(i => i.currentStock <= i.reorderPoint && i.currentStock > 0).length"></p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500">หมดสต็อก</p>
+                  <p class="text-2xl font-bold text-red-600" x-text="inventory.list.filter(i => i.currentStock <= 0).length"></p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Inventory Table -->
@@ -951,8 +1018,9 @@
               <table class="w-full">
                 <thead class="gradient-purple-pink text-white">
                   <tr>
-                    <th class="px-6 py-3 text-left text-sm font-semibold">รหัสสินค้า</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">รหัส</th>
                     <th class="px-6 py-3 text-left text-sm font-semibold">ชื่อวัตถุดิบ</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">หมวดหมู่</th>
                     <th class="px-6 py-3 text-center text-sm font-semibold">สต็อกคงเหลือ</th>
                     <th class="px-6 py-3 text-center text-sm font-semibold">หน่วย</th>
                     <th class="px-6 py-3 text-center text-sm font-semibold">จุดสั่งซื้อ</th>
@@ -963,32 +1031,38 @@
                 <tbody class="divide-y divide-gray-200">
                   <template x-if="inventory.list && inventory.list.length > 0">
                     <template x-for="item in inventory.list" :key="item.itemId">
-                      <tr class="hover:bg-purple-50 transition" :class="{'bg-orange-50': item.stock <= item.reorderPoint}">
-                        <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="item.sku"></td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-800" x-text="item.name"></td>
+                      <tr class="hover:bg-purple-50 transition" :class="{'bg-orange-50': item.currentStock <= item.reorderPoint}">
+                        <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="item.itemCode"></td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800" x-text="item.itemName"></td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="item.category || '-'"></td>
                         <td class="px-6 py-4 text-center">
-                          <span class="text-lg font-bold" :class="item.stock <= item.reorderPoint ? 'text-orange-600' : 'text-gray-800'" x-text="item.stock"></span>
+                          <span class="text-lg font-bold" :class="item.currentStock <= item.reorderPoint ? 'text-orange-600' : 'text-gray-800'" x-text="item.currentStock"></span>
                         </td>
                         <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.unit"></td>
                         <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.reorderPoint"></td>
                         <td class="px-6 py-4 text-center">
                           <span :class="{
-                            'badge-success': item.stock > item.reorderPoint,
-                            'badge-warning': item.stock <= item.reorderPoint && item.stock > 0,
-                            'badge-danger': item.stock <= 0
-                          }" class="badge" x-text="item.stock > item.reorderPoint ? 'ปกติ' : (item.stock > 0 ? 'ใกล้หมด' : 'หมด')"></span>
+                            'badge-success': item.currentStock > item.reorderPoint,
+                            'badge-warning': item.currentStock <= item.reorderPoint && item.currentStock > 0,
+                            'badge-danger': item.currentStock <= 0
+                          }" class="badge" x-text="item.currentStock > item.reorderPoint ? 'ปกติ' : (item.currentStock > 0 ? 'ใกล้หมด' : 'หมด')"></span>
                         </td>
                         <td class="px-6 py-4 text-center">
-                          <button @click="adjustStock(item)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
-                            ปรับสต็อก
-                          </button>
+                          <div class="flex items-center justify-center space-x-2">
+                            <button @click="openStockAdjustModal(item)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                              ปรับสต็อก
+                            </button>
+                            <button @click="editInventoryItem(item)" class="text-blue-600 hover:text-blue-800 font-semibold text-sm">
+                              แก้ไข
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </template>
                   </template>
                   <template x-if="!inventory.list || inventory.list.length === 0">
                     <tr>
-                      <td colspan="7" class="px-6 py-12 text-center">
+                      <td colspan="8" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center justify-center text-gray-400">
                           <svg class="w-16 h-16 mb-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20" />
@@ -1049,14 +1123,116 @@
           </div>
 
           <!-- Charts -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Top Products Chart -->
             <div class="bg-white rounded-xl shadow-md p-6">
-              <h3 class="text-lg font-bold text-gray-800 mb-4">ยอดขายรายวัน</h3>
-              <canvas id="salesChart"></canvas>
+              <h3 class="text-lg font-bold text-gray-800 mb-4">สินค้าขายดี Top 5</h3>
+              <div class="space-y-3">
+                <template x-if="reports.topProducts && reports.topProducts.length > 0">
+                  <template x-for="(product, index) in reports.topProducts.slice(0, 5)" :key="product.productId">
+                    <div>
+                      <div class="flex justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700" x-text="product.productName"></span>
+                        <span class="font-semibold text-purple-600" x-text="product.totalQuantity + ' ชิ้น'"></span>
+                      </div>
+                      <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full transition-all"
+                             :class="{
+                               'bg-gradient-to-r from-purple-500 to-pink-500': index === 0,
+                               'bg-gradient-to-r from-blue-500 to-purple-500': index === 1,
+                               'bg-gradient-to-r from-green-500 to-blue-500': index === 2,
+                               'bg-gradient-to-r from-yellow-500 to-orange-500': index === 3,
+                               'bg-gradient-to-r from-orange-500 to-red-500': index === 4
+                             }"
+                             :style="'width: ' + (product.totalQuantity / Math.max(...reports.topProducts.map(p => p.totalQuantity)) * 100) + '%'"></div>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+                <template x-if="!reports.topProducts || reports.topProducts.length === 0">
+                  <div class="text-center py-8 text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19,13H5V11H19V13Z" />
+                    </svg>
+                    <p class="text-sm">ยังไม่มีข้อมูลสินค้าขายดี</p>
+                  </div>
+                </template>
+              </div>
             </div>
+
+            <!-- Sales by Channel Chart -->
             <div class="bg-white rounded-xl shadow-md p-6">
-              <h3 class="text-lg font-bold text-gray-800 mb-4">สินค้าขายดี</h3>
-              <canvas id="topProductsChart"></canvas>
+              <h3 class="text-lg font-bold text-gray-800 mb-4">ยอดขายตามช่องทาง</h3>
+              <div class="space-y-3">
+                <template x-if="reports.salesByChannel && reports.salesByChannel.length > 0">
+                  <template x-for="(channel, index) in reports.salesByChannel" :key="channel.channelName">
+                    <div>
+                      <div class="flex justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700" x-text="channel.channelName"></span>
+                        <span class="font-semibold text-purple-600" x-text="formatCurrency(channel.totalSales)"></span>
+                      </div>
+                      <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                             :style="'width: ' + (channel.totalSales / Math.max(...reports.salesByChannel.map(c => c.totalSales)) * 100) + '%'"></div>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+                <template x-if="!reports.salesByChannel || reports.salesByChannel.length === 0">
+                  <div class="text-center py-8 text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19,13H5V11H19V13Z" />
+                    </svg>
+                    <p class="text-sm">ยังไม่มีข้อมูลยอดขายตามช่องทาง</p>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Orders Table -->
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+              <h3 class="text-lg font-bold text-gray-800">ออเดอร์ล่าสุด</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">เลขที่ออเดอร์</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">วันที่</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ช่องทาง</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">ยอดรวม</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <template x-if="reports.recentOrders && reports.recentOrders.length > 0">
+                    <template x-for="order in reports.recentOrders.slice(0, 10)" :key="order.orderId">
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="order.orderNumber"></td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="formatDateTime(order.orderDate)"></td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="order.channel"></td>
+                        <td class="px-6 py-4 text-sm font-semibold text-purple-600 text-right" x-text="formatCurrency(order.total)"></td>
+                        <td class="px-6 py-4 text-center">
+                          <span :class="{
+                            'badge-success': order.status === 'COMPLETED',
+                            'badge-warning': order.status === 'PENDING',
+                            'badge-danger': order.status === 'CANCELLED'
+                          }" class="badge" x-text="order.status === 'COMPLETED' ? 'เสร็จสิ้น' : (order.status === 'PENDING' ? 'รอดำเนินการ' : 'ยกเลิก')"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </template>
+                  <template x-if="!reports.recentOrders || reports.recentOrders.length === 0">
+                    <tr>
+                      <td colspan="5" class="px-6 py-8 text-center text-gray-400">
+                        <p class="text-sm">ไม่มีข้อมูลออเดอร์</p>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -2215,7 +2391,10 @@
         endDate: '',
         totalSales: 0,
         totalOrders: 0,
-        avgOrderValue: 0
+        avgOrderValue: 0,
+        topProducts: [],
+        salesByChannel: [],
+        recentOrders: []
       },
 
       // Settings
@@ -2483,6 +2662,7 @@
 
       async loadReports() {
         console.log('📈 [DATA] Loading reports...');
+        this.loading = true;
         try {
           const response = await this.callAPI('getSalesReport', {
             shopSheetId: this.shopSheetId,
@@ -2494,10 +2674,15 @@
             this.reports.totalSales = response.data.totalSales || 0;
             this.reports.totalOrders = response.data.totalOrders || 0;
             this.reports.avgOrderValue = response.data.avgOrderValue || 0;
+            this.reports.topProducts = response.data.topProducts || [];
+            this.reports.salesByChannel = response.data.salesByChannel || [];
+            this.reports.recentOrders = response.data.recentOrders || [];
             console.log('✅ [DATA] Reports loaded');
           }
         } catch (error) {
           console.error('❌ [DATA] Error loading reports:', error);
+        } finally {
+          this.loading = false;
         }
       },
 
@@ -3336,71 +3521,61 @@
 
       // ==================== INVENTORY FUNCTIONS ====================
 
-      async openStockAdjustModal() {
-        this.showToast('info', 'กรุณาเลือกรายการที่ต้องการปรับสต็อกจากตาราง');
+      openInventoryItemForm() {
+        console.log('➕ [UI] Opening Inventory Item Form (New)');
+        this.showWarning('ฟีเจอร์เพิ่มวัตถุดิบจะเปิดในเร็วๆ นี้');
+        // TODO: Implement Inventory Item Form Modal
       },
 
-      async adjustStock(item) {
-        const { value: formValues } = await Swal.fire({
-          title: `ปรับสต็อก: ${item.name}`,
-          html:
-            `<div class="text-left mb-4">` +
-            `<p class="text-sm text-gray-600">สต็อกปัจจุบัน: <strong>${item.stock} ${item.unit}</strong></p>` +
-            `</div>` +
-            `<select id="swal-adjust-type" class="swal2-input">` +
-            `<option value="ADD">เพิ่มสต็อก (+)</option>` +
-            `<option value="REMOVE">ลดสต็อก (-)</option>` +
-            `<option value="SET">กำหนดสต็อกใหม่</option>` +
-            `</select>` +
-            `<input id="swal-adjust-amount" class="swal2-input" type="number" placeholder="จำนวน" min="0">` +
-            `<textarea id="swal-adjust-note" class="swal2-textarea" placeholder="หมายเหตุ (ไม่บังคับ)"></textarea>`,
-          focusConfirm: false,
-          showCancelButton: true,
-          confirmButtonText: 'บันทึก',
-          cancelButtonText: 'ยกเลิก',
-          preConfirm: () => {
-            const adjustType = document.getElementById('swal-adjust-type').value;
-            const amount = document.getElementById('swal-adjust-amount').value;
-            const note = document.getElementById('swal-adjust-note').value;
+      editInventoryItem(item) {
+        console.log('✏️ [UI] Editing Inventory Item:', item.itemId);
+        this.showWarning('ฟีเจอร์แก้ไขวัตถุดิบจะเปิดในเร็วๆ นี้');
+        // TODO: Implement Inventory Item Edit Modal
+      },
 
-            if (!amount || parseFloat(amount) < 0) {
-              Swal.showValidationMessage('กรุณากรอกจำนวนที่ถูกต้อง');
-              return false;
-            }
+      async openStockAdjustModal(item) {
+        if (!item) {
+          this.showWarning('กรุณาเลือกรายการที่ต้องการปรับสต็อกจากตาราง');
+          return;
+        }
 
-            return { adjustType, amount: parseFloat(amount), note };
+        const adjustType = prompt(`ปรับสต็อก: ${item.itemName}\nสต็อกปัจจุบัน: ${item.currentStock} ${item.unit}\n\nเลือกประเภท:\n1 = เพิ่มสต็อก\n2 = ลดสต็อก\n3 = กำหนดค่าใหม่`, '1');
+
+        if (!adjustType || !['1', '2', '3'].includes(adjustType)) {
+          return;
+        }
+
+        const quantity = prompt('กรอกจำนวน:', '0');
+        if (!quantity || parseFloat(quantity) < 0) {
+          this.showWarning('กรุณากรอกจำนวนที่ถูกต้อง');
+          return;
+        }
+
+        this.loading = true;
+        try {
+          const params = {
+            shopSheetId: this.shopSheetId,
+            itemId: item.itemId,
+            quantity: parseFloat(quantity),
+            adjustmentType: adjustType === '1' ? 'add' : (adjustType === '2' ? 'subtract' : 'set'),
+            reason: 'MANUAL_ADJUSTMENT',
+            notes: 'ปรับสต็อกด้วยตนเอง',
+            username: this.username
+          };
+
+          const response = await this.callAPI('adjustStock', params);
+
+          if (response.success) {
+            this.showSuccess('ปรับสต็อกสำเร็จ');
+            await this.loadInventory();
+          } else {
+            this.showError(response.message || 'เกิดข้อผิดพลาด');
           }
-        });
-
-        if (formValues) {
-          try {
-            let newStock = item.stock;
-            if (formValues.adjustType === 'ADD') {
-              newStock = item.stock + formValues.amount;
-            } else if (formValues.adjustType === 'REMOVE') {
-              newStock = item.stock - formValues.amount;
-              if (newStock < 0) newStock = 0;
-            } else if (formValues.adjustType === 'SET') {
-              newStock = formValues.amount;
-            }
-
-            const response = await this.callAPI('updateInventory', {
-              shopSheetId: this.shopSheetId,
-              inventoryId: item.id,
-              stock: newStock,
-              note: formValues.note
-            });
-
-            if (response.success) {
-              this.showToast('success', 'ปรับสต็อกสำเร็จ');
-              await this.loadInventory();
-            } else {
-              this.showError(response.message);
-            }
-          } catch (error) {
-            console.error('Error adjusting stock:', error);
-            this.showError('เกิดข้อผิดพลาดในการปรับสต็อก');
-          }
+        } catch (error) {
+          console.error('❌ [INVENTORY] Error adjusting stock:', error);
+          this.showError('เกิดข้อผิดพลาดในการปรับสต็อก');
+        } finally {
+          this.loading = false;
         }
       },
 
