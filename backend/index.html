@@ -1100,6 +1100,9 @@
                             <button @click="editInventoryItem(item)" class="text-blue-600 hover:text-blue-800 font-semibold text-sm">
                               แก้ไข
                             </button>
+                            <button @click="deleteInventoryItem(item)" class="text-red-600 hover:text-red-800 font-semibold text-sm">
+                              ลบ
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -2361,6 +2364,170 @@
     </div>
   </div>
 
+  <!-- Inventory Item Form Modal -->
+  <div x-show="modals.inventoryItemForm" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div @click.away="modals.inventoryItemForm = false" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full">
+        <!-- Header -->
+        <div class="gradient-purple-pink text-white p-6 rounded-t-2xl">
+          <h2 class="text-xl font-bold flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20" />
+            </svg>
+            <span x-text="inventory.editing ? 'แก้ไขวัตถุดิบ' : 'เพิ่มวัตถุดิบใหม่'"></span>
+          </h2>
+        </div>
+
+        <!-- Form -->
+        <div class="p-6 space-y-6">
+          <!-- Basic Info -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                รหัสวัตถุดิบ
+                <span class="text-xs text-gray-500 font-normal">(ถ้าไม่ระบุจะสร้างอัตโนมัติ)</span>
+              </label>
+              <input type="text" x-model="inventory.form.itemCode" placeholder="เช่น COFFEE-001" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                ชื่อวัตถุดิบ <span class="text-red-500">*</span>
+              </label>
+              <input type="text" x-model="inventory.form.itemName" placeholder="เช่น เมล็ดกาแฟอาราบิก้า" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">หมวดหมู่</label>
+              <select x-model="inventory.form.category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">-- เลือกหมวดหมู่ --</option>
+                <option value="COFFEE">เมล็ดกาแฟ</option>
+                <option value="MILK">นม</option>
+                <option value="SYRUP">ไซรัป</option>
+                <option value="TOPPING">ท็อปปิ้ง</option>
+                <option value="POWDER">ผง</option>
+                <option value="INGREDIENT">วัตถุดิบอื่นๆ</option>
+                <option value="PACKAGING">บรรจุภัณฑ์</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                หน่วย <span class="text-red-500">*</span>
+              </label>
+              <select x-model="inventory.form.unit" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">-- เลือกหน่วย --</option>
+                <option value="กก.">กก. (กิโลกรัม)</option>
+                <option value="กรัม">กรัม</option>
+                <option value="ลิตร">ลิตร</option>
+                <option value="มล.">มล. (มิลลิลิตร)</option>
+                <option value="ชิ้น">ชิ้น</option>
+                <option value="ถุง">ถุง</option>
+                <option value="กล่อง">กล่อง</option>
+                <option value="แพ็ค">แพ็ค</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Stock Info -->
+          <div class="border-t pt-4">
+            <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+              </svg>
+              ข้อมูลสต็อก
+            </h3>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  สต็อกปัจจุบัน
+                  <span class="text-xs text-gray-500 font-normal">(ถ้าเป็นรายการใหม่)</span>
+                </label>
+                <input type="number" x-model.number="inventory.form.currentStock" min="0" step="0.01" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">สต็อกต่ำสุด</label>
+                <input type="number" x-model.number="inventory.form.minStock" min="0" step="0.01" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">สต็อกสูงสุด</label>
+                <input type="number" x-model.number="inventory.form.maxStock" min="0" step="0.01" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  จุดสั่งซื้อ
+                  <span class="text-xs text-gray-500 font-normal">(จุดที่แจ้งเตือน)</span>
+                </label>
+                <input type="number" x-model.number="inventory.form.reorderPoint" min="0" step="0.01" placeholder="0" class="w-full px-4 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Info -->
+          <div class="border-t pt-4">
+            <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22C15.89,22 15,21.1 15,20C15,18.89 15.89,18 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5C21,5.17 20.95,5.34 20.88,5.5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63L7.17,14.75A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22C5.89,22 5,21.1 5,20C5,18.89 5.89,18 7,18M16,11L18.78,6H6.14L8.5,11H16Z" />
+              </svg>
+              ข้อมูลการสั่งซื้อ
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนที่สั่งซื้อ</label>
+                <input type="number" x-model.number="inventory.form.reorderQty" min="0" step="0.01" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">ต้นทุนต่อหน่วย (฿)</label>
+                <input type="number" x-model.number="inventory.form.unitCost" min="0" step="0.01" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">รหัสผู้จัดจำหน่าย</label>
+                <input type="text" x-model="inventory.form.supplierId" placeholder="SUP-001" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculated Values Display -->
+          <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p class="text-gray-600">มูลค่าสต็อก:</p>
+                <p class="text-lg font-bold text-purple-600" x-text="formatCurrency((inventory.form.currentStock || 0) * (inventory.form.unitCost || 0))"></p>
+              </div>
+              <div>
+                <p class="text-gray-600">สถานะ:</p>
+                <p class="text-lg font-bold" :class="(inventory.form.currentStock || 0) <= (inventory.form.reorderPoint || 0) ? 'text-orange-600' : 'text-green-600'" x-text="(inventory.form.currentStock || 0) <= (inventory.form.reorderPoint || 0) ? 'ใกล้หมด' : 'ปกติ'"></p>
+              </div>
+              <div>
+                <p class="text-gray-600">มูลค่าต่อการสั่งซื้อ:</p>
+                <p class="text-lg font-bold text-purple-600" x-text="formatCurrency((inventory.form.reorderQty || 0) * (inventory.form.unitCost || 0))"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3 p-6 bg-gray-50 rounded-b-2xl">
+          <button @click="modals.inventoryItemForm = false" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition">
+            ยกเลิก
+          </button>
+          <button @click="saveInventoryItem()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            <span x-text="inventory.editing ? '💾 บันทึกการแก้ไข' : '➕ เพิ่มวัตถุดิบ'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Alpine.js Application Script -->
   <script>
   console.log('🚀 [INIT] Loading Coffee Shop POS Application Script...');
@@ -2411,7 +2578,8 @@
         variantsManager: false,
         variantForm: false,
         modifierForm: false,
-        variantsGuide: false
+        variantsGuide: false,
+        inventoryItemForm: false
       },
 
       // POS
@@ -2497,7 +2665,22 @@
 
       // Inventory
       inventory: {
-        list: []
+        list: [],
+        editing: null,
+        form: {
+          itemId: '',
+          itemCode: '',
+          itemName: '',
+          category: '',
+          unit: '',
+          currentStock: 0,
+          minStock: 0,
+          maxStock: 0,
+          reorderPoint: 0,
+          reorderQty: 0,
+          unitCost: 0,
+          supplierId: ''
+        }
       },
 
       // Dashboard
@@ -3709,14 +3892,170 @@
 
       openInventoryItemForm() {
         console.log('➕ [UI] Opening Inventory Item Form (New)');
-        this.showWarning('ฟีเจอร์เพิ่มวัตถุดิบจะเปิดในเร็วๆ นี้');
-        // TODO: Implement Inventory Item Form Modal
+        this.inventory.editing = null;
+        this.inventory.form = {
+          itemId: '',
+          itemCode: '',
+          itemName: '',
+          category: '',
+          unit: '',
+          currentStock: 0,
+          minStock: 0,
+          maxStock: 0,
+          reorderPoint: 0,
+          reorderQty: 0,
+          unitCost: 0,
+          supplierId: ''
+        };
+        this.modals.inventoryItemForm = true;
       },
 
       editInventoryItem(item) {
         console.log('✏️ [UI] Editing Inventory Item:', item.itemId);
-        this.showWarning('ฟีเจอร์แก้ไขวัตถุดิบจะเปิดในเร็วๆ นี้');
-        // TODO: Implement Inventory Item Edit Modal
+        this.inventory.editing = item;
+        this.inventory.form = {
+          itemId: item.itemId,
+          itemCode: item.itemCode || '',
+          itemName: item.itemName || '',
+          category: item.category || '',
+          unit: item.unit || '',
+          currentStock: item.currentStock || 0,
+          minStock: item.minStock || 0,
+          maxStock: item.maxStock || 0,
+          reorderPoint: item.reorderPoint || 0,
+          reorderQty: item.reorderQty || 0,
+          unitCost: item.unitCost || 0,
+          supplierId: item.supplierId || ''
+        };
+        this.modals.inventoryItemForm = true;
+      },
+
+      async saveInventoryItem() {
+        console.log('💾 [INVENTORY] Saving inventory item...');
+
+        // Validation
+        if (!this.inventory.form.itemName || this.inventory.form.itemName.trim() === '') {
+          Swal.fire({
+            icon: 'warning',
+            title: 'กรุณากรอกชื่อวัตถุดิบ',
+            text: 'ชื่อวัตถุดิบเป็นข้อมูลที่จำเป็น',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#9333ea'
+          });
+          return;
+        }
+
+        if (!this.inventory.form.unit || this.inventory.form.unit.trim() === '') {
+          Swal.fire({
+            icon: 'warning',
+            title: 'กรุณาเลือกหน่วย',
+            text: 'หน่วยเป็นข้อมูลที่จำเป็น',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#9333ea'
+          });
+          return;
+        }
+
+        this.loading = true;
+
+        try {
+          const apiMethod = this.inventory.editing ? 'updateInventoryItem' : 'createInventoryItem';
+          const response = await this.callAPI(apiMethod, {
+            shopSheetId: this.shopSheetId,
+            username: this.username,
+            ...this.inventory.form
+          });
+
+          if (response.success) {
+            Swal.fire({
+              icon: 'success',
+              title: this.inventory.editing ? 'แก้ไขวัตถุดิบสำเร็จ' : 'เพิ่มวัตถุดิบสำเร็จ',
+              text: response.message,
+              timer: 2000,
+              showConfirmButton: false
+            });
+
+            this.modals.inventoryItemForm = false;
+            await this.loadInventoryItems();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: response.message,
+              confirmButtonText: 'ตกลง',
+              confirmButtonColor: '#9333ea'
+            });
+          }
+        } catch (error) {
+          console.error('❌ [INVENTORY] Error saving inventory item:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถบันทึกวัตถุดิบได้ กรุณาลองใหม่อีกครั้ง',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#9333ea'
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async deleteInventoryItem(item) {
+        console.log('🗑️ [INVENTORY] Deleting inventory item:', item.itemId);
+
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'ยืนยันการลบ',
+          text: `คุณต้องการลบวัตถุดิบ "${item.itemName}" ใช่หรือไม่?`,
+          showCancelButton: true,
+          confirmButtonText: 'ลบ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#dc2626',
+          cancelButtonColor: '#9333ea'
+        });
+
+        if (!result.isConfirmed) {
+          return;
+        }
+
+        this.loading = true;
+
+        try {
+          const response = await this.callAPI('deleteInventoryItem', {
+            shopSheetId: this.shopSheetId,
+            itemId: item.itemId
+          });
+
+          if (response.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'ลบวัตถุดิบสำเร็จ',
+              timer: 2000,
+              showConfirmButton: false
+            });
+
+            await this.loadInventoryItems();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: response.message,
+              confirmButtonText: 'ตกลง',
+              confirmButtonColor: '#9333ea'
+            });
+          }
+        } catch (error) {
+          console.error('❌ [INVENTORY] Error deleting inventory item:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถลบวัตถุดิบได้ กรุณาลองใหม่อีกครั้ง',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#9333ea'
+          });
+        } finally {
+          this.loading = false;
+        }
       },
 
       async openStockAdjustModal(item) {
