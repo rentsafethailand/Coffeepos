@@ -470,6 +470,16 @@
               <span class="font-medium">คลังสินค้า</span>
             </a>
 
+            <!-- Recipes -->
+            <a @click="navigateTo('recipes')"
+               :class="currentPage === 'recipes' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.5,1.5C10.73,1.5 9.17,2.67 8.61,4.31L10.35,4.76C10.7,3.67 11.7,3 12.5,3C13.63,3 14.5,3.87 14.5,5C14.5,6.13 13.63,7 12.5,7C11.7,7 10.7,6.33 10.35,5.24L8.61,5.69C9.17,7.33 10.73,8.5 12.5,8.5C14.43,8.5 16,6.93 16,5C16,3.07 14.43,1.5 12.5,1.5M5.75,3.5A2.25,2.25 0 0,0 3.5,5.75A2.25,2.25 0 0,0 5.75,8A2.25,2.25 0 0,0 8,5.75A2.25,2.25 0 0,0 5.75,3.5M4.5,10V22H7V10H4.5M10,10V22H12.5V10H10M15.5,10V22H18V10H15.5Z" />
+              </svg>
+              <span class="font-medium">สูตรการผลิต</span>
+            </a>
+
             <!-- Reports -->
             <a @click="navigateTo('reports')"
                :class="currentPage === 'reports' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
@@ -2681,6 +2691,12 @@
           unitCost: 0,
           supplierId: ''
         }
+      },
+
+      // Recipes
+      recipes: {
+        list: [],
+        selectedProduct: null
       },
 
       // Dashboard
