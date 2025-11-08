@@ -2970,33 +2970,40 @@ function createPurchaseOrder(params) {
     const tenantSS = SpreadsheetApp.openById(params.shopSheetId);
     const poSheet = tenantSS.getSheetByName('PurchaseOrders');
     const poItemsSheet = tenantSS.getSheetByName('POItems');
+    const inventorySheet = tenantSS.getSheetByName('InventoryItems');
+    const movementsSheet = tenantSS.getSheetByName('StockMovements');
 
     const poId = 'PO_' + formatOrderDate(new Date()) + '_' + Utilities.getUuid().substring(0, 4);
     const poNumber = 'PO-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
 
+    const status = params.status || 'PENDING';
+    const receivedDate = status === 'RECEIVED' ? new Date() : null;
+
     const po = [
       poId,
       poNumber,
-      params.supplierId,
-      params.supplierName,
-      new Date(),
-      params.expectedDate || new Date(),
-      null,
+      params.supplierId || '',
+      params.supplierName || '',
+      params.poDate ? new Date(params.poDate) : new Date(),
+      params.expectedDate ? new Date(params.expectedDate) : new Date(),
+      receivedDate,
       params.subtotal || 0,
       params.discount || 0,
       params.tax || 0,
-      params.total || 0,
-      'PENDING',
+      params.totalAmount || 0,
+      status,
       params.notes || '',
       params.username || 'SYSTEM',
       null,
-      null
+      status === 'RECEIVED' ? (params.username || 'SYSTEM') : null
     ];
 
     poSheet.appendRow(po);
 
     // Add PO items
     const items = params.items || [];
+    const inventoryData = inventorySheet.getDataRange().getValues();
+
     for (const item of items) {
       const poItemId = poId + '_ITEM_' + Utilities.getUuid().substring(0, 4);
 
@@ -3004,20 +3011,67 @@ function createPurchaseOrder(params) {
         poItemId,
         poId,
         item.itemId,
-        item.itemName,
+        item.itemName || '',
         item.quantity,
-        0, // receivedQty
-        item.unit,
+        status === 'RECEIVED' ? item.quantity : 0, // receivedQty
+        item.unit || '',
         item.unitPrice,
-        item.subtotal
+        item.amount || 0
       ];
 
       poItemsSheet.appendRow(poItem);
+
+      // If status is RECEIVED, update stock immediately
+      if (status === 'RECEIVED') {
+        for (let j = 1; j < inventoryData.length; j++) {
+          if (inventoryData[j][0] === item.itemId) {
+            const beforeQty = inventoryData[j][5];
+            const newQty = beforeQty + item.quantity;
+
+            inventorySheet.getRange(j + 1, 6).setValue(newQty);
+
+            // Update status
+            const minStock = inventoryData[j][6];
+            const itemStatus = newQty <= 0 ? 'OUT_OF_STOCK' : (newQty <= minStock ? 'LOW_STOCK' : 'IN_STOCK');
+            inventorySheet.getRange(j + 1, 13).setValue(itemStatus);
+
+            // Update last purchase
+            inventorySheet.getRange(j + 1, 14).setValue(new Date());
+            inventorySheet.getRange(j + 1, 15).setValue(item.unitPrice * item.quantity);
+
+            // Record movement
+            const movementId = 'MOV_' + Utilities.getUuid().substring(0, 8);
+            const movement = [
+              movementId,
+              item.itemId,
+              inventoryData[j][2], // itemName
+              'IN',
+              item.quantity,
+              inventoryData[j][4], // unit
+              beforeQty,
+              newQty,
+              'PO',
+              poId,
+              'รับของจาก PO: ' + poNumber,
+              params.notes || '',
+              new Date(),
+              params.username || 'SYSTEM'
+            ];
+
+            movementsSheet.appendRow(movement);
+
+            // Reload inventory data after update
+            inventoryData[j][5] = newQty;
+
+            break;
+          }
+        }
+      }
     }
 
     return {
       success: true,
-      message: 'สร้างใบสั่งซื้อสำเร็จ',
+      message: status === 'RECEIVED' ? 'สร้างใบสั่งซื้อและอัพเดทสต็อกสำเร็จ' : 'สร้างใบสั่งซื้อสำเร็จ',
       data: {
         poId: poId,
         poNumber: poNumber
@@ -3038,23 +3092,28 @@ function createPurchaseOrder(params) {
 function getPurchaseOrders(params) {
   try {
     const tenantSS = SpreadsheetApp.openById(params.shopSheetId);
-    const sheet = tenantSS.getSheetByName('PurchaseOrders');
-    const data = sheet.getDataRange().getValues();
+    const poSheet = tenantSS.getSheetByName('PurchaseOrders');
+    const poItemsSheet = tenantSS.getSheetByName('POItems');
+
+    const poData = poSheet.getDataRange().getValues();
+    const poItemsData = poItemsSheet.getDataRange().getValues();
 
     const pos = [];
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
+    for (let i = 1; i < poData.length; i++) {
+      const row = poData[i];
       pos.push({
         poId: row[0],
         poNumber: row[1],
         supplierId: row[2],
         supplierName: row[3],
+        poDate: row[4] ? new Date(row[4]).toISOString() : null,
         orderDate: row[4] ? new Date(row[4]).toISOString() : null,
         expectedDate: row[5] ? new Date(row[5]).toISOString() : null,
         receivedDate: row[6] ? new Date(row[6]).toISOString() : null,
         subtotal: row[7],
         discount: row[8],
         tax: row[9],
+        totalAmount: row[10],
         total: row[10],
         status: row[11],
         notes: row[12],
@@ -3062,9 +3121,28 @@ function getPurchaseOrders(params) {
       });
     }
 
+    const items = [];
+    for (let i = 1; i < poItemsData.length; i++) {
+      const row = poItemsData[i];
+      items.push({
+        poItemId: row[0],
+        poId: row[1],
+        itemId: row[2],
+        itemName: row[3],
+        quantity: row[4],
+        receivedQty: row[5],
+        unit: row[6],
+        unitPrice: row[7],
+        amount: row[8]
+      });
+    }
+
     return {
       success: true,
-      data: pos
+      data: {
+        orders: pos,
+        items: items
+      }
     };
 
   } catch (error) {
