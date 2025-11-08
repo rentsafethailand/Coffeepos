@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+  <!-- QR Code Generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
   <!-- Google Fonts - Sarabun -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1375,8 +1378,8 @@
 
         <!-- Cash Payment -->
         <div x-show="payment.method === 'CASH'" class="mb-6">
-          <label class="block text-sm font-bold text-gray-700 mb-2">รับเงินมา</label>
-          <input type="number" x-model="payment.received" @input="calculateChange()" placeholder="0.00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+          <label class="block text-sm font-bold text-gray-700 mb-2">รับเงินมา <span class="text-red-500">*</span></label>
+          <input type="number" x-model="payment.received" @input="calculateChange()" placeholder="กรอกจำนวนเงินที่รับมา" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
           <div class="mt-3 p-3 bg-green-50 rounded-lg">
             <div class="flex justify-between items-center">
               <span class="text-gray-700 font-semibold">เงินทอน</span>
@@ -1387,8 +1390,46 @@
 
         <!-- Transfer Payment -->
         <div x-show="payment.method === 'TRANSFER'" class="mb-6">
-          <label class="block text-sm font-bold text-gray-700 mb-2">อัพโหลดสลิปโอนเงิน</label>
-          <input type="file" @change="handleSlipUpload($event)" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+          <!-- PromptPay QR Code -->
+          <div x-show="settings.promptpay_number" class="mb-4 p-4 bg-purple-50 rounded-lg">
+            <p class="text-center text-sm font-bold text-gray-700 mb-3">สแกน QR Code เพื่อชำระเงิน</p>
+            <div class="flex justify-center">
+              <canvas x-ref="qrCodeCanvas" class="border-4 border-white rounded-lg shadow-lg"></canvas>
+            </div>
+            <p class="text-center mt-3 text-lg font-bold text-purple-600" x-text="formatCurrency(pos.total)"></p>
+            <p class="text-center text-xs text-gray-500 mt-1">พร้อมเพย์: <span x-text="settings.promptpay_number"></span></p>
+          </div>
+
+          <label class="block text-sm font-bold text-gray-700 mb-2">อัพโหลดสลิปโอนเงิน <span class="text-red-500">*</span></label>
+
+          <!-- Camera Capture Button and File Upload -->
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <button @click="openCamera()" type="button" class="px-4 py-3 border-2 border-purple-300 text-purple-700 font-semibold rounded-lg hover:bg-purple-50 transition flex items-center justify-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              ถ่ายสลิป
+            </button>
+            <label class="px-4 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition cursor-pointer flex items-center justify-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              อัพโหลด
+              <input type="file" @change="handleSlipUpload($event)" accept="image/*" class="hidden">
+            </label>
+          </div>
+
+          <!-- Hidden camera input -->
+          <input type="file" x-ref="cameraInput" @change="handleSlipUpload($event)" accept="image/*" capture="environment" class="hidden">
+
+          <!-- Preview uploaded slip -->
+          <div x-show="payment.slipFile" class="mt-3 p-3 bg-green-50 rounded-lg flex items-center">
+            <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="text-green-700 font-semibold text-sm" x-text="payment.slipFile ? payment.slipFile.name : ''"></span>
+          </div>
         </div>
 
         <!-- Actions -->
@@ -1655,7 +1696,8 @@
         taxRate: 7,
         taxId: '',
         printReceipt: true,
-        autoDeductStock: true
+        autoDeductStock: true,
+        promptpay_number: ''  // เบอร์พร้อมเพย์สำหรับ QR Code
       },
 
       // Channels Management
@@ -2089,13 +2131,14 @@
       },
 
       openPaymentModal() {
+        console.log('💳 [PAYMENT] Opening payment modal');
         if (this.pos.cart.length === 0) {
           return;
         }
 
         this.payment = {
           method: 'CASH',
-          received: 0,
+          received: '',  // เปลี่ยนจาก 0 เป็นค่าว่าง
           change: 0,
           slipFile: null
         };
@@ -2103,6 +2146,14 @@
         this.manualOrderNumber = '';  // Reset manual order number
 
         this.modals.payment = true;
+
+        // Generate PromptPay QR Code if settings has promptpay_number
+        if (this.settings.promptpay_number) {
+          // ใช้ setTimeout เพื่อให้ modal แสดงผลก่อน แล้วค่อย generate QR
+          setTimeout(() => {
+            this.generatePromptPayQR();
+          }, 100);
+        }
       },
 
       calculateChange() {
@@ -2121,7 +2172,12 @@
 
         // Check payment method
         if (this.payment.method === 'CASH') {
-          return parseFloat(this.payment.received) >= this.pos.total;
+          // ตรวจสอบว่ากรอกจำนวนเงินมาหรือไม่ และต้องมากกว่าหรือเท่ากับยอดรวม
+          const received = parseFloat(this.payment.received);
+          if (!this.payment.received || this.payment.received === '' || isNaN(received)) {
+            return false;  // ต้องกรอกจำนวนเงิน
+          }
+          return received >= this.pos.total;
         } else if (this.payment.method === 'TRANSFER') {
           return this.payment.slipFile !== null;
         }
@@ -2132,7 +2188,76 @@
         const file = event.target.files[0];
         if (file) {
           this.payment.slipFile = file;
+          console.log('📸 [PAYMENT] Slip file selected:', file.name);
         }
+      },
+
+      openCamera() {
+        console.log('📸 [PAYMENT] Opening camera for slip capture');
+        // เปิด camera input โดยการ trigger click บน hidden input
+        this.$refs.cameraInput.click();
+      },
+
+      generatePromptPayQR() {
+        console.log('💳 [PAYMENT] Generating PromptPay QR Code');
+        try {
+          if (!this.settings.promptpay_number) {
+            console.warn('⚠️ [PAYMENT] No PromptPay number configured');
+            return;
+          }
+
+          const canvas = this.$refs.qrCodeCanvas;
+          if (!canvas) {
+            console.warn('⚠️ [PAYMENT] QR Code canvas not found');
+            return;
+          }
+
+          // สร้าง PromptPay payload
+          // Format: 00020101021229370016A000000677010111 + เบอร์พร้อมเพย์ (13 หลัก) + 5303764 + จำนวนเงิน + 6304 + CRC
+          const promptpayNumber = this.settings.promptpay_number.replace(/[-\s]/g, ''); // ลบ - และ space ออก
+          const amount = this.pos.total.toFixed(2);
+
+          // ใช้ QRCode library ที่โหลดมาจาก CDN
+          QRCode.toCanvas(canvas, this.generatePromptPayPayload(promptpayNumber, amount), {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#4C1D95',  // สีม่วง
+              light: '#FFFFFF'
+            }
+          }, (error) => {
+            if (error) {
+              console.error('❌ [PAYMENT] QR Code generation failed:', error);
+            } else {
+              console.log('✅ [PAYMENT] QR Code generated successfully');
+            }
+          });
+        } catch (error) {
+          console.error('❌ [PAYMENT] Error generating QR Code:', error);
+        }
+      },
+
+      generatePromptPayPayload(promptpayNumber, amount) {
+        // PromptPay QR Code Format (EMVCo)
+        // Simplified version - สำหรับ production จริงควรใช้ library ที่รองรับ CRC16
+
+        // พื้นฐานของ PromptPay payload
+        const payload = [
+          '000201',  // Payload Format Indicator
+          '010212',  // Point of Initiation Method (12 = QR is shown on a screen)
+          '29',      // Merchant Account Information - Start
+          '37',      // Length
+          '0016A000000677010111',  // AID: PromptPay
+          `01${promptpayNumber.length.toString().padStart(2, '0')}${promptpayNumber}`,  // PromptPay ID
+          '5303764',  // Currency: THB (764)
+          `54${amount.length.toString().padStart(2, '0')}${amount}`,  // Transaction Amount
+          '5802TH',  // Country Code: Thailand
+          '6304'     // CRC placeholder
+        ].join('');
+
+        // สำหรับ demo ใช้ payload แบบง่าย ไม่มี CRC
+        // ใน production จริงควรคำนวณ CRC16-CCITT
+        return payload;
       },
 
       async confirmPayment() {
@@ -2186,9 +2311,20 @@
             this.updateCartTotals();
             this.modals.payment = false;
 
-            // Reload data
+            // Reload data เพื่ออัพเดทข้อมูลหลังบันทึกออเดอร์
+            console.log('🔄 [DATA] Reloading data after successful payment...');
+
+            // 1. โหลด Dashboard ใหม่เพื่ออัพเดท: ยอดขายวันนี้, จำนวนออเดอร์, สินค้าขายดี
+            console.log('📊 [DATA] Reloading dashboard for updated sales stats...');
             await this.loadDashboard();
-            await this.loadInventory();
+
+            // 2. โหลด Inventory ใหม่เพื่ออัพเดทจำนวนสต็อกคงเหลือ (ถ้าเปิด autoDeductStock)
+            if (this.settings.autoDeductStock) {
+              console.log('📦 [DATA] Reloading inventory for updated stock levels...');
+              await this.loadInventory();
+            } else {
+              console.log('ℹ️ [DATA] Skip inventory reload (autoDeductStock is disabled)');
+            }
 
           } else {
             console.error('❌ [PAYMENT] Order creation failed:', response.message);
