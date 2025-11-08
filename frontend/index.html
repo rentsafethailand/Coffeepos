@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coffee Shop POS - ระบบจัดการร้านกาแฟ</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Google Fonts - Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #7C3AED 0%, #DB2777 100%);
+    }
+
+    /* Gradient Background */
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-purple-pink {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+    }
+
+    .gradient-purple-pink-hover:hover {
+      background: linear-gradient(135deg, #7C3AED 0%, #DB2777 100%);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid white;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Card Hover Effect */
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+    }
+
+    /* Badge Styles */
+    .badge {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-success { background: #10B981; color: white; }
+    .badge-warning { background: #F59E0B; color: white; }
+    .badge-danger { background: #EF4444; color: white; }
+    .badge-info { background: #3B82F6; color: white; }
+
+    /* Product Grid */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Sticky Order Summary */
+    .order-summary-sticky {
+      position: sticky;
+      top: 1rem;
+    }
+
+    /* Print Styles */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Variant Button Styles */
+    .variant-btn {
+      @apply px-4 py-2 rounded-lg border-2 transition-all cursor-pointer;
+    }
+
+    .variant-btn.selected {
+      @apply border-purple-600 bg-purple-100 text-purple-700 font-semibold;
+    }
+
+    .variant-btn:not(.selected) {
+      @apply border-gray-300 bg-white text-gray-700 hover:border-purple-400;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50" x-data="coffeeShopApp()" x-init="init()">
+
+  <!-- Loading Screen -->
+  <div x-show="loading" class="fixed inset-0 z-50 flex items-center justify-center gradient-bg">
+    <div class="text-center">
+      <div class="spinner mx-auto mb-4"></div>
+      <p class="text-white text-lg font-semibold">กำลังโหลด...</p>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div x-show="!isAuthenticated"
+       class="fixed inset-0 z-40 flex items-center justify-center modal-backdrop"
+       x-transition>
+
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden">
+      <div class="grid md:grid-cols-2">
+
+        <!-- Left Side - Branding -->
+        <div class="hidden md:flex gradient-bg p-8 flex-col justify-center items-center text-white">
+          <div class="bg-white/20 rounded-3xl p-6 mb-6">
+            <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
+            </svg>
+          </div>
+
+          <h1 class="text-3xl font-bold mb-2">Coffee Shop POS</h1>
+          <p class="text-center mb-8 text-white/90">ระบบจัดการร้านกาแฟแบบครบวงจร</p>
+
+          <div class="space-y-3 w-full max-w-xs">
+            <div class="flex items-center space-x-3">
+              <div class="bg-white/20 rounded-full p-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" />
+                </svg>
+              </div>
+              <span class="text-sm">Multi-tenant Support</span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <div class="bg-white/20 rounded-full p-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19,20H5V9H19M16,2H8C6.9,2 6,2.9 6,4V8H18V4C18,2.9 17.1,2 16,2M20,10H4C2.9,10 2,10.9 2,12V20C2,21.1 2.9,22 4,22H20C21.1,22 22,21.1 22,20V12C22,10.9 21.1,10 20,10Z" />
+                </svg>
+              </div>
+              <span class="text-sm">Auto Stock Deduction</span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <div class="bg-white/20 rounded-full p-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9,17H7V10H9M13,17H11V7H13M17,17H15V13H17M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" />
+                </svg>
+              </div>
+              <span class="text-sm">Reports & Analytics</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side - Login Form -->
+        <div class="p-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">เข้าสู่ระบบ</h2>
+          <p class="text-gray-500 mb-8">กรุณาเข้าสู่ระบบเพื่อใช้งานระบบ</p>
+
+          <!-- Login Form -->
+          <form @submit.prevent="login()" class="space-y-6">
+
+            <!-- Username -->
+            <div>
+              <label class="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                <svg class="w-4 h-4 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                </svg>
+                ชื่อผู้ใช้
+              </label>
+              <input
+                type="text"
+                x-model="loginForm.username"
+                placeholder="กรอกชื่อผู้ใช้"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                required>
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label class="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                <svg class="w-4 h-4 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                </svg>
+                รหัสผ่าน
+              </label>
+              <div class="relative">
+                <input
+                  :type="showPassword ? 'text' : 'password'"
+                  x-model="loginForm.password"
+                  placeholder="กรอกรหัสผ่าน"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                  required>
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <svg x-show="!showPassword" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                  </svg>
+                  <svg x-show="showPassword" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                x-model="loginForm.rememberMe"
+                id="rememberMe"
+                class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+              <label for="rememberMe" class="ml-2 text-sm text-gray-600">จดจำการเข้าสู่ระบบ</label>
+            </div>
+
+            <!-- Error Message -->
+            <div x-show="loginError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <span x-text="loginError"></span>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              :disabled="loggingIn"
+              class="w-full gradient-purple-pink text-white font-semibold py-3 rounded-lg hover:shadow-lg transition duration-300 flex items-center justify-center"
+              :class="{'opacity-50 cursor-not-allowed': loggingIn}">
+              <svg x-show="loggingIn" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span x-text="loggingIn ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'"></span>
+            </button>
+          </form>
+
+          <!-- Demo Credentials -->
+          <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <p class="text-xs font-semibold text-purple-800 mb-2">🔑 บัญชีสำหรับทดลองใช้งาน:</p>
+            <div class="space-y-1 text-xs text-purple-700">
+              <p><strong>Admin:</strong> admin / admin123</p>
+              <p><strong>Manager:</strong> manager / manager123</p>
+              <p><strong>Demo:</strong> demo / demo</p>
+            </div>
+          </div>
+
+          <p class="text-center text-xs text-gray-500 mt-6">
+            © 2024 Coffee Shop POS. All rights reserved.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App (After Login) -->
+  <div x-show="isAuthenticated" x-cloak>
+
+    <!-- Top Navigation Bar -->
+    <nav class="gradient-purple-pink text-white shadow-lg sticky top-0 z-30 no-print">
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between">
+
+          <!-- Left: Logo & Menu Toggle -->
+          <div class="flex items-center space-x-4">
+            <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-white/10 rounded-lg transition">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
+              </svg>
+            </button>
+
+            <div class="flex items-center space-x-3">
+              <div class="bg-white/20 rounded-lg p-2">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
+                </svg>
+              </div>
+              <div>
+                <h1 class="font-bold text-lg" x-text="shopName"></h1>
+                <p class="text-xs text-white/70">ระบบขายหน้าร้าน</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center: Current Date/Time -->
+          <div class="hidden md:block text-center">
+            <p class="text-sm font-medium" x-text="currentDateTime"></p>
+          </div>
+
+          <!-- Right: Notifications, User Menu -->
+          <div class="flex items-center space-x-3">
+
+            <!-- Notifications -->
+            <button class="relative p-2 hover:bg-white/10 rounded-lg transition">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.19 14,4.29 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21" />
+              </svg>
+              <span x-show="lowStockCount > 0" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" x-text="lowStockCount"></span>
+            </button>
+
+            <!-- User Menu -->
+            <div class="relative" x-data="{ userMenuOpen: false }">
+              <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-2 px-3 py-2 hover:bg-white/10 rounded-lg transition">
+                <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-semibold">
+                  <span x-text="username.charAt(0).toUpperCase()"></span>
+                </div>
+                <div class="hidden md:block text-left">
+                  <p class="text-sm font-semibold" x-text="username"></p>
+                  <p class="text-xs text-white/70" x-text="userRole"></p>
+                </div>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7,10L12,15L17,10H7Z" />
+                </svg>
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div x-show="userMenuOpen"
+                   @click.away="userMenuOpen = false"
+                   x-transition
+                   class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
+                <a @click="currentPage = 'settings'; userMenuOpen = false" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition cursor-pointer">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                    </svg>
+                    <span>ตั้งค่า</span>
+                  </div>
+                </a>
+                <hr class="my-2">
+                <a @click="logout()" class="block px-4 py-2 text-red-600 hover:bg-red-50 transition cursor-pointer">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z" />
+                    </svg>
+                    <span>ออกจากระบบ</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Layout: Sidebar + Main Content -->
+    <div class="flex">
+
+      <!-- Sidebar -->
+      <aside
+        x-show="sidebarOpen"
+        @click.away="sidebarOpen = false"
+        x-transition
+        class="fixed md:sticky top-0 left-0 h-screen w-64 bg-white shadow-lg z-20 overflow-y-auto no-print">
+
+        <div class="p-4">
+
+          <!-- Menu Items -->
+          <nav class="space-y-1">
+
+            <!-- Dashboard -->
+            <a @click="navigateTo('dashboard')"
+               :class="currentPage === 'dashboard' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
+              </svg>
+              <span class="font-medium">แดชบอร์ด</span>
+            </a>
+
+            <!-- POS -->
+            <a @click="navigateTo('pos')"
+               :class="currentPage === 'pos' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
+              </svg>
+              <span class="font-medium">ขายหน้าร้าน</span>
+            </a>
+
+            <!-- Orders -->
+            <a @click="navigateTo('orders')"
+               :class="currentPage === 'orders' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,20H5V9H19M16,2H8C6.9,2 6,2.9 6,4V8H18V4C18,2.9 17.1,2 16,2M20,10H4C2.9,10 2,10.9 2,12V20C2,21.1 2.9,22 4,22H20C21.1,22 22,21.1 22,20V12C22,10.9 21.1,10 20,10Z" />
+              </svg>
+              <span class="font-medium">รายการออเดอร์</span>
+            </a>
+
+            <!-- Products -->
+            <a @click="navigateTo('products')"
+               :class="currentPage === 'products' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6,2L2,6V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V6L18,2M12,3.5L15.5,7H8.5M4,20V8H20V20H4M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z" />
+              </svg>
+              <span class="font-medium">สินค้า</span>
+            </a>
+
+            <!-- Inventory -->
+            <a @click="navigateTo('inventory')"
+               :class="currentPage === 'inventory' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20M13,14H11V11H9V9H11V6H13V9H16V11H13" />
+              </svg>
+              <span class="font-medium">คลังสินค้า</span>
+            </a>
+
+            <!-- Reports -->
+            <a @click="navigateTo('reports')"
+               :class="currentPage === 'reports' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9,17H7V10H9M13,17H11V7H13M17,17H15V13H17M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z" />
+              </svg>
+              <span class="font-medium">รายงาน</span>
+            </a>
+
+            <!-- Settings -->
+            <a @click="navigateTo('settings')"
+               :class="currentPage === 'settings' ? 'gradient-purple-pink text-white' : 'text-gray-700 hover:bg-purple-50'"
+               class="flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+              </svg>
+              <span class="font-medium">ตั้งค่า</span>
+            </a>
+
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="flex-1 p-6 overflow-y-auto" style="height: calc(100vh - 64px);">
+
+        <!-- DASHBOARD PAGE -->
+        <div x-show="currentPage === 'dashboard'" x-cloak>
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">แดชบอร์ด</h2>
+            <p class="text-gray-500">ภาพรวมการขายและสต็อกสินค้า</p>
+          </div>
+
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+
+            <!-- Total Sales -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-blue-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
+                  </svg>
+                </div>
+                <span class="text-green-500 text-sm font-semibold">+12.5%</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">ยอดขายวันนี้</p>
+              <h3 class="text-2xl font-bold text-gray-800" x-text="formatCurrency(dashboardData.totalSales)"></h3>
+            </div>
+
+            <!-- Total Orders -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-purple-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19,20H5V9H19M16,2H8C6.9,2 6,2.9 6,4V8H18V4C18,2.9 17.1,2 16,2M20,10H4C2.9,10 2,10.9 2,12V20C2,21.1 2.9,22 4,22H20C21.1,22 22,21.1 22,20V12C22,10.9 21.1,10 20,10Z" />
+                  </svg>
+                </div>
+                <span class="text-blue-500 text-sm font-semibold">+8.2%</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">จำนวนออเดอร์</p>
+              <h3 class="text-2xl font-bold text-gray-800" x-text="dashboardData.totalOrders"></h3>
+            </div>
+
+            <!-- Low Stock -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-orange-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4,6H2V20A2,2 0 0,0 4,22H18V20H4M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20" />
+                  </svg>
+                </div>
+                <span class="badge-warning">ต่ำ</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">สต็อกใกล้หมด</p>
+              <h3 class="text-2xl font-bold text-gray-800" x-text="dashboardData.lowStockItems"></h3>
+            </div>
+
+            <!-- Profit -->
+            <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <div class="bg-green-100 rounded-lg p-3">
+                  <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.37,8.45 18.32,7.09L7.09,18.32C8.45,19.37 10.15,20 12,20Z" />
+                  </svg>
+                </div>
+                <span class="text-green-500 text-sm font-semibold">+15.7%</span>
+              </div>
+              <p class="text-gray-500 text-sm mb-1">กำไรวันนี้</p>
+              <h3 class="text-2xl font-bold text-gray-800" x-text="formatCurrency(dashboardData.totalProfit)"></h3>
+            </div>
+
+          </div>
+
+          <!-- Top Products & Low Stock -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Top Products -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">สินค้าขายดี Top 5</h3>
+              <div class="space-y-3">
+                <template x-for="(product, index) in dashboardData.topProducts" :key="index">
+                  <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 rounded-lg gradient-purple-pink flex items-center justify-center text-white font-bold" x-text="index + 1"></div>
+                      <div>
+                        <p class="font-semibold text-gray-800" x-text="product.name"></p>
+                        <p class="text-sm text-gray-500"><span x-text="product.count"></span> แก้ว</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <p class="font-bold text-gray-800" x-text="formatCurrency(product.revenue)"></p>
+                    </div>
+                  </div>
+                </template>
+
+                <div x-show="dashboardData.topProducts.length === 0" class="text-center py-8 text-gray-400">
+                  <p>ยังไม่มีข้อมูล</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">แจ้งเตือนสต็อก</h3>
+              <div class="space-y-3">
+                <template x-for="item in dashboardData.lowStockList" :key="item.id">
+                  <div class="flex items-center justify-between p-3 border-l-4 border-orange-500 bg-orange-50 rounded-r-lg">
+                    <div>
+                      <p class="font-semibold text-gray-800" x-text="item.name"></p>
+                      <p class="text-sm text-gray-500">เหลือ <span x-text="item.stock"></span> <span x-text="item.unit"></span></p>
+                    </div>
+                    <button @click="navigateTo('inventory')" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm">
+                      ดูรายละเอียด
+                    </button>
+                  </div>
+                </template>
+
+                <div x-show="dashboardData.lowStockList.length === 0" class="text-center py-8 text-gray-400">
+                  <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9,10A3.04,3.04 0 0,1 12,7A3.04,3.04 0 0,1 15,10A3.04,3.04 0 0,1 12,13A3.04,3.04 0 0,1 9,10M12,19L16,13H8L12,19M12,2A5,5 0 0,1 17,7A5,5 0 0,1 12,12A5,5 0 0,1 7,7A5,5 0 0,1 12,2M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+                  </svg>
+                  <p>สต็อกปกติทั้งหมด</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Due to length limit, will continue in next file chunk -->
+        <!-- POS PAGE, ORDERS PAGE, PRODUCTS PAGE, etc. will be added next -->
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Include main Alpine.js app script -->
+  <script src="app.js"></script>
+
+</body>
+</html>
