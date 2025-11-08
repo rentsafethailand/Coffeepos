@@ -15,6 +15,7 @@ function coffeeShopApp() {
     username: '',
     userRole: '',
     tenantId: '',
+    shopSheetId: '',
     shopName: '',
     currentDateTime: '',
 
@@ -164,6 +165,7 @@ function coffeeShopApp() {
           this.username = session.username;
           this.userRole = session.role;
           this.tenantId = session.tenantId;
+          this.shopSheetId = session.shopSheetId;
           this.shopName = session.shopName;
           this.isAuthenticated = true;
           this.loadInitialData();
@@ -196,6 +198,7 @@ function coffeeShopApp() {
           this.username = response.data.username;
           this.userRole = response.data.role;
           this.tenantId = response.data.tenantId;
+          this.shopSheetId = response.data.shopSheetId;
           this.shopName = response.data.tenantName || 'Coffee Shop';
           this.isAuthenticated = true;
 
@@ -205,6 +208,7 @@ function coffeeShopApp() {
               username: this.username,
               role: this.userRole,
               tenantId: this.tenantId,
+              shopSheetId: this.shopSheetId,
               shopName: this.shopName
             }));
           }
@@ -229,6 +233,7 @@ function coffeeShopApp() {
       this.username = '';
       this.userRole = '';
       this.tenantId = '';
+      this.shopSheetId = '';
       this.shopName = '';
       this.currentPage = 'dashboard';
       localStorage.removeItem('coffeeShopSession');
@@ -261,8 +266,8 @@ function coffeeShopApp() {
 
     async loadDashboard() {
       try {
-        const response = await this.callAPI('getDashboard', {
-          tenantId: this.tenantId
+        const response = await this.callAPI('getDashboardData', {
+          shopSheetId: this.shopSheetId
         });
 
         if (response.success) {
@@ -277,7 +282,7 @@ function coffeeShopApp() {
     async loadProducts() {
       try {
         const response = await this.callAPI('getProducts', {
-          tenantId: this.tenantId
+          shopSheetId: this.shopSheetId
         });
 
         if (response.success) {
@@ -293,7 +298,7 @@ function coffeeShopApp() {
     async loadOrders() {
       try {
         const response = await this.callAPI('getOrders', {
-          tenantId: this.tenantId
+          shopSheetId: this.shopSheetId
         });
 
         if (response.success) {
@@ -308,7 +313,7 @@ function coffeeShopApp() {
     async loadInventory() {
       try {
         const response = await this.callAPI('getInventoryItems', {
-          tenantId: this.tenantId
+          shopSheetId: this.shopSheetId
         });
 
         if (response.success) {
@@ -321,8 +326,8 @@ function coffeeShopApp() {
 
     async loadReports() {
       try {
-        const response = await this.callAPI('getReports', {
-          tenantId: this.tenantId,
+        const response = await this.callAPI('getSalesReport', {
+          shopSheetId: this.shopSheetId,
           startDate: this.reports.startDate,
           endDate: this.reports.endDate
         });
@@ -531,7 +536,7 @@ function coffeeShopApp() {
 
         // Create order
         const response = await this.callAPI('createOrder', {
-          tenantId: this.tenantId,
+          shopSheetId: this.shopSheetId,
           username: this.username,
           channel: 'POS',
           items: orderItems,
@@ -575,7 +580,7 @@ function coffeeShopApp() {
           try {
             const base64 = e.target.result.split(',')[1];
             const response = await this.callAPI('uploadSlipImage', {
-              tenantId: this.tenantId,
+              shopSheetId: this.shopSheetId,
               filename: file.name,
               mimeType: file.type,
               base64Data: base64
@@ -653,7 +658,7 @@ function coffeeShopApp() {
       try {
         const newStatus = !product.isActive;
         const response = await this.callAPI('updateProduct', {
-          tenantId: this.tenantId,
+          shopSheetId: this.shopSheetId,
           productId: product.id,
           isActive: newStatus
         });
@@ -689,7 +694,7 @@ function coffeeShopApp() {
     async saveSettings() {
       try {
         const response = await this.callAPI('updateSettings', {
-          tenantId: this.tenantId,
+          shopSheetId: this.shopSheetId,
           settings: this.settings
         });
 
@@ -771,11 +776,13 @@ function coffeeShopApp() {
               username: params.username,
               role: 'ADMIN',
               tenantId: 'DEMO_TENANT',
+              shopSheetId: 'DEMO_SHOP_SHEET_ID',
               tenantName: 'ร้านกาแฟตัวอย่าง'
             }
           };
 
         case 'getDashboard':
+        case 'getDashboardData':
           return {
             success: true,
             data: {
@@ -942,6 +949,7 @@ function coffeeShopApp() {
           };
 
         case 'getReports':
+        case 'getSalesReport':
           return {
             success: true,
             data: {
