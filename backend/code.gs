@@ -53,13 +53,15 @@ function doGet(e) {
     // Serve different pages
     switch(page) {
       case 'superadmin':
-        return HtmlService.createHtmlOutputFromFile('superadmin')
+        return HtmlService.createTemplateFromFile('superadmin')
+          .evaluate()
           .setTitle('Super Admin - Coffee Shop POS')
           .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 
       case 'index':
       default:
-        return HtmlService.createHtmlOutputFromFile('index')
+        return HtmlService.createTemplateFromFile('index')
+          .evaluate()
           .setTitle('Coffee Shop POS')
           .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
@@ -69,6 +71,14 @@ function doGet(e) {
       '<h1>Error</h1><p>' + error.message + '</p>'
     );
   }
+}
+
+/**
+ * Helper function to include other HTML files
+ * ใช้สำหรับ <?!= include('filename') ?> ใน HTML template
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 /**
