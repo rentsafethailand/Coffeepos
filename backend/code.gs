@@ -30,7 +30,7 @@
 // ==========================================
 
 // ⚠️ แก้ไขค่าเหล่านี้หลังจากรัน setup.gs
-const MASTER_SHEET_ID = '1EXpcqYXYV5Q80P-fa0BYdxWIM3DrlxMgf0FpfcJukI'; // จาก setup.gs
+const MASTER_SHEET_ID = '1EXpcqYXYV5Q80P-fa0BYdxWIM3DrlxMgf0FpfcJukIs'; // จาก setup.gs
 const MASTER_FOLDER_ID = '1KGhQwHfOF3-tW_R2Xv0IVRQvgKWjoecv'; // จาก setup.gs
 
 // Session timeout (minutes)
@@ -56,6 +56,7 @@ function doGet(e) {
         return HtmlService.createTemplateFromFile('superadmin')
           .evaluate()
           .setTitle('Super Admin - Coffee Shop POS')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1')
           .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 
       case 'index':
@@ -63,6 +64,7 @@ function doGet(e) {
         return HtmlService.createTemplateFromFile('index')
           .evaluate()
           .setTitle('Coffee Shop POS')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1')
           .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
 
@@ -270,10 +272,15 @@ function apiResponse(data) {
  */
 function login(params) {
   try {
+    Logger.log('📝 [LOGIN] Started - params: ' + JSON.stringify(params));
+
     const username = params.username;
     const password = params.password;
 
+    Logger.log('📝 [LOGIN] Username: ' + username);
+
     if (!username || !password) {
+      Logger.log('❌ [LOGIN] Missing credentials');
       return {
         success: false,
         message: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'
@@ -281,9 +288,11 @@ function login(params) {
     }
 
     // Get Master Spreadsheet
+    Logger.log('📝 [LOGIN] Opening Master Sheet: ' + MASTER_SHEET_ID);
     const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
     const usersSheet = masterSS.getSheetByName('Users');
     const tenantsSheet = masterSS.getSheetByName('Tenants');
+    Logger.log('✅ [LOGIN] Master Sheet opened successfully');
 
     // Find user
     const usersData = usersSheet.getDataRange().getValues();
@@ -308,14 +317,18 @@ function login(params) {
     }
 
     if (!user) {
+      Logger.log('❌ [LOGIN] User not found: ' + username);
       return {
         success: false,
         message: 'ไม่พบผู้ใช้นี้ในระบบ'
       };
     }
 
+    Logger.log('✅ [LOGIN] User found: ' + user.username + ' (Role: ' + user.role + ')');
+
     // Check status
     if (user.status !== 'ACTIVE') {
+      Logger.log('❌ [LOGIN] User inactive: ' + user.status);
       return {
         success: false,
         message: 'บัญชีนี้ถูกระงับการใช้งาน'
@@ -323,17 +336,25 @@ function login(params) {
     }
 
     // Verify password
+    Logger.log('📝 [LOGIN] Verifying password...');
     const hashedPassword = hashPassword(password);
+    Logger.log('📝 [LOGIN] Hashed password: ' + hashedPassword);
+    Logger.log('📝 [LOGIN] Stored password: ' + user.password);
+
     if (user.password !== hashedPassword) {
+      Logger.log('❌ [LOGIN] Password mismatch');
       return {
         success: false,
         message: 'รหัสผ่านไม่ถูกต้อง'
       };
     }
 
+    Logger.log('✅ [LOGIN] Password verified');
+
     // Get tenant information (if not SUPERADMIN)
     let tenant = null;
     if (user.tenantId !== 'SYSTEM') {
+      Logger.log('📝 [LOGIN] Looking up tenant: ' + user.tenantId);
       const tenantsData = tenantsSheet.getDataRange().getValues();
       for (let i = 1; i < tenantsData.length; i++) {
         const row = tenantsData[i];
@@ -354,14 +375,18 @@ function login(params) {
       }
 
       if (!tenant) {
+        Logger.log('❌ [LOGIN] Tenant not found: ' + user.tenantId);
         return {
           success: false,
           message: 'ไม่พบข้อมูลร้านค้า'
         };
       }
 
+      Logger.log('✅ [LOGIN] Tenant found: ' + tenant.tenantName + ' (Status: ' + tenant.status + ')');
+
       // Check tenant status
       if (tenant.status !== 'ACTIVE') {
+        Logger.log('❌ [LOGIN] Tenant inactive: ' + tenant.status);
         return {
           success: false,
           message: 'ร้านค้านี้ถูกระงับการใช้งาน'
@@ -371,7 +396,10 @@ function login(params) {
       // Check license expiry
       const endDate = new Date(tenant.endDate);
       const today = new Date();
+      Logger.log('📝 [LOGIN] Checking license: End date = ' + endDate + ', Today = ' + today);
+
       if (endDate < today) {
+        Logger.log('❌ [LOGIN] License expired');
         return {
           success: false,
           message: 'ไลเซนส์หมดอายุแล้ว กรุณาต่ออายุ'
@@ -381,14 +409,19 @@ function login(params) {
       // Calculate days remaining
       const diffTime = endDate - today;
       const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      Logger.log('✅ [LOGIN] License valid: ' + daysRemaining + ' days remaining');
 
       tenant.daysRemaining = daysRemaining;
+    } else {
+      Logger.log('📝 [LOGIN] SUPERADMIN login - no tenant check needed');
     }
 
     // Generate session token
+    Logger.log('📝 [LOGIN] Generating session token');
     const token = Utilities.getUuid();
 
     // Update last login
+    Logger.log('📝 [LOGIN] Updating last login timestamp');
     for (let i = 1; i < usersData.length; i++) {
       if (usersData[i][0] === user.userId) {
         usersSheet.getRange(i + 1, 10).setValue(new Date()); // lastLogin column
@@ -397,6 +430,7 @@ function login(params) {
     }
 
     // Build response
+    Logger.log('📝 [LOGIN] Building response object');
     const response = {
       success: true,
       message: 'เข้าสู่ระบบสำเร็จ',
@@ -413,18 +447,22 @@ function login(params) {
 
     // Add tenant info if not SUPERADMIN
     if (tenant) {
+      Logger.log('📝 [LOGIN] Adding tenant info to response');
       response.data.tenantId = tenant.tenantId;
       response.data.shopName = tenant.tenantName;
       response.data.shopSheetId = tenant.sheetId;
       response.data.licenseKey = tenant.licenseKey;
       response.data.licenseType = tenant.licenseType;
-      response.data.licenseEndDate = tenant.endDate;
+      response.data.licenseEndDate = tenant.endDate.toISOString(); // Convert Date to ISO string
       response.data.daysRemaining = tenant.daysRemaining;
     }
 
+    Logger.log('✅ [LOGIN] Success! Returning response: ' + JSON.stringify(response));
     return response;
 
   } catch (error) {
+    Logger.log('❌ [LOGIN] ERROR: ' + error.message);
+    Logger.log('❌ [LOGIN] Stack trace: ' + error.stack);
     return {
       success: false,
       message: 'เกิดข้อผิดพลาด: ' + error.message
@@ -494,8 +532,8 @@ function getTenants(params) {
         folderId: row[3],
         licenseKey: row[4],
         licenseType: row[5],
-        startDate: row[6],
-        endDate: row[7],
+        startDate: row[6] ? new Date(row[6]).toISOString() : null,
+        endDate: row[7] ? new Date(row[7]).toISOString() : null,
         status: row[8],
         maxUsers: row[9],
         ownerName: row[10],
@@ -503,7 +541,7 @@ function getTenants(params) {
         ownerPhone: row[12],
         address: row[13],
         taxId: row[14],
-        createdDate: row[15]
+        createdDate: row[15] ? new Date(row[15]).toISOString() : null
       });
     }
 
@@ -1133,7 +1171,7 @@ function getInventoryItems(params) {
         unitCost: row[10],
         supplierId: row[11],
         status: row[12],
-        lastPurchaseDate: row[13],
+        lastPurchaseDate: row[13] ? new Date(row[13]).toISOString() : null,
         lastPurchasePrice: row[14]
       });
     }
@@ -1392,7 +1430,7 @@ function getStockMovements(params) {
         referenceId: row[9],
         reason: row[10],
         notes: row[11],
-        createdDate: row[12],
+        createdDate: row[12] ? new Date(row[12]).toISOString() : null,
         createdBy: row[13]
       });
     }
@@ -1451,7 +1489,7 @@ function getRecipes(params) {
         quantity: row[4],
         unit: row[5],
         notes: row[6],
-        createdDate: row[7],
+        createdDate: row[7] ? new Date(row[7]).toISOString() : null,
         createdBy: row[8]
       });
     }
@@ -1943,9 +1981,9 @@ function getOrders(params) {
         slipImageUrl: row[20],
         status: row[21],
         notes: row[22],
-        createdDate: row[23],
-        completedDate: row[24],
-        cancelledDate: row[25],
+        createdDate: row[23] ? new Date(row[23]).toISOString() : null,
+        completedDate: row[24] ? new Date(row[24]).toISOString() : null,
+        cancelledDate: row[25] ? new Date(row[25]).toISOString() : null,
         cancelReason: row[26]
       });
 
@@ -2000,7 +2038,7 @@ function getOrderDetail(params) {
           total: row[15],
           paymentMethod: row[16],
           status: row[21],
-          createdDate: row[23]
+          createdDate: row[23] ? new Date(row[23]).toISOString() : null
         };
         break;
       }
@@ -2515,7 +2553,7 @@ function getChannels(params) {
         deliveryFee: row[4],
         isActive: row[5],
         settings: row[6],
-        createdDate: row[7],
+        createdDate: row[7] ? new Date(row[7]).toISOString() : null,
         orderNumberMode: row[8] || 'AUTO',       // AUTO or MANUAL
         orderNumberFormat: row[9] || '#{NNNN}'   // Format for AUTO mode
       });
@@ -2715,8 +2753,8 @@ function getCustomers(params) {
         points: row[6],
         totalOrders: row[7],
         totalSpent: row[8],
-        lastOrderDate: row[9],
-        memberSince: row[10],
+        lastOrderDate: row[9] ? new Date(row[9]).toISOString() : null,
+        memberSince: row[10] ? new Date(row[10]).toISOString() : null,
         tier: row[11],
         status: row[12]
       });
@@ -3033,9 +3071,9 @@ function getPurchaseOrders(params) {
         poNumber: row[1],
         supplierId: row[2],
         supplierName: row[3],
-        orderDate: row[4],
-        expectedDate: row[5],
-        receivedDate: row[6],
+        orderDate: row[4] ? new Date(row[4]).toISOString() : null,
+        expectedDate: row[5] ? new Date(row[5]).toISOString() : null,
+        receivedDate: row[6] ? new Date(row[6]).toISOString() : null,
         subtotal: row[7],
         discount: row[8],
         tax: row[9],
