@@ -601,11 +601,677 @@
           </div>
         </div>
 
-        <!-- Due to length limit, will continue in next file chunk -->
-        <!-- POS PAGE, ORDERS PAGE, PRODUCTS PAGE, etc. will be added next -->
+        <!-- POS PAGE -->
+        <div x-show="currentPage === 'pos'" x-cloak>
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">ขายหน้าร้าน (POS)</h2>
+            <p class="text-gray-500">เลือกสินค้าและสร้างออเดอร์</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left: Product Grid -->
+            <div class="lg:col-span-2">
+
+              <!-- Search & Filter -->
+              <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+                <div class="flex flex-col md:flex-row gap-3">
+                  <!-- Search -->
+                  <div class="flex-1 relative">
+                    <input
+                      type="text"
+                      x-model="pos.searchQuery"
+                      @input="searchProducts()"
+                      placeholder="ค้นหาสินค้า..."
+                      class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
+                    </svg>
+                  </div>
+
+                  <!-- Category Filter -->
+                  <select x-model="pos.selectedCategory" @change="filterProducts()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">ทุกหมวดหมู่</option>
+                    <option value="COFFEE">กาแฟ</option>
+                    <option value="TEA">ชา</option>
+                    <option value="BEVERAGE">เครื่องดื่ม</option>
+                    <option value="FOOD">อาหาร</option>
+                    <option value="DESSERT">ของหวาน</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Products Grid -->
+              <div class="bg-white rounded-xl shadow-md p-4">
+                <div class="product-grid" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                  <template x-for="product in pos.filteredProducts" :key="product.id">
+                    <div @click="openVariantSelector(product)" class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 cursor-pointer hover:shadow-lg transition border-2 border-transparent hover:border-purple-400">
+                      <div class="aspect-square bg-white rounded-lg mb-3 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
+                        </svg>
+                      </div>
+                      <h4 class="font-semibold text-gray-800 mb-1" x-text="product.name"></h4>
+                      <p class="text-purple-600 font-bold" x-text="formatCurrency(product.price)"></p>
+                      <span x-show="!product.isActive" class="badge badge-danger text-xs mt-2 inline-block">ไม่พร้อมขาย</span>
+                    </div>
+                  </template>
+
+                  <div x-show="pos.filteredProducts.length === 0" class="col-span-full text-center py-12 text-gray-400">
+                    <svg class="w-20 h-20 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" />
+                    </svg>
+                    <p>ไม่พบสินค้า</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Order Summary -->
+            <div class="lg:col-span-1">
+              <div class="bg-white rounded-xl shadow-md p-4 order-summary-sticky">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                  <span>ออเดอร์ปัจจุบัน</span>
+                  <button @click="clearCart()" class="text-sm text-red-500 hover:text-red-700">ล้าง</button>
+                </h3>
+
+                <!-- Cart Items -->
+                <div class="space-y-3 mb-4" style="max-height: 300px; overflow-y: auto;">
+                  <template x-for="(item, index) in pos.cart" :key="index">
+                    <div class="bg-purple-50 rounded-lg p-3">
+                      <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                          <p class="font-semibold text-gray-800" x-text="item.productName"></p>
+                          <!-- Variants Display -->
+                          <div class="text-xs text-gray-600 space-y-1 mt-1">
+                            <p x-show="item.variants.size" x-text="'ขนาด: ' + item.variants.size"></p>
+                            <p x-show="item.variants.temperature" x-text="'อุณหภูมิ: ' + item.variants.temperature"></p>
+                            <p x-show="item.variants.sweetness" x-text="'ความหวาน: ' + item.variants.sweetness"></p>
+                            <template x-for="addon in item.addons" :key="addon">
+                              <p x-text="'+ ' + addon"></p>
+                            </template>
+                          </div>
+                        </div>
+                        <button @click="removeFromCart(index)" class="text-red-500 hover:text-red-700">
+                          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div class="flex items-center justify-between">
+                        <!-- Quantity Controls -->
+                        <div class="flex items-center space-x-2">
+                          <button @click="updateQuantity(index, -1)" class="w-7 h-7 bg-white rounded-lg text-gray-700 hover:bg-gray-100 flex items-center justify-center">-</button>
+                          <span class="w-8 text-center font-semibold" x-text="item.quantity"></span>
+                          <button @click="updateQuantity(index, 1)" class="w-7 h-7 bg-white rounded-lg text-gray-700 hover:bg-gray-100 flex items-center justify-center">+</button>
+                        </div>
+                        <p class="font-bold text-purple-600" x-text="formatCurrency(item.price * item.quantity)"></p>
+                      </div>
+                    </div>
+                  </template>
+
+                  <div x-show="pos.cart.length === 0" class="text-center py-8 text-gray-400">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22C15.89,22 15,21.1 15,20C15,18.89 15.89,18 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5C21,5.17 20.95,5.34 20.88,5.5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63L7.17,14.75A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22C5.89,22 5,21.1 5,20C5,18.89 5.89,18 7,18M16,11L18.78,6H6.14L8.5,11H16Z" />
+                    </svg>
+                    <p class="text-sm">ยังไม่มีสินค้าในตะกร้า</p>
+                  </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="border-t pt-4 space-y-2">
+                  <div class="flex justify-between text-gray-600">
+                    <span>รวมย่อย</span>
+                    <span x-text="formatCurrency(pos.subtotal)"></span>
+                  </div>
+                  <div class="flex justify-between text-gray-600">
+                    <span>ภาษี (7%)</span>
+                    <span x-text="formatCurrency(pos.tax)"></span>
+                  </div>
+                  <div class="flex justify-between text-lg font-bold text-gray-800 pt-2 border-t">
+                    <span>รวมทั้งสิ้น</span>
+                    <span x-text="formatCurrency(pos.total)"></span>
+                  </div>
+                </div>
+
+                <!-- Checkout Button -->
+                <button
+                  @click="openPaymentModal()"
+                  :disabled="pos.cart.length === 0"
+                  class="w-full mt-4 gradient-purple-pink text-white font-semibold py-3 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                  ชำระเงิน
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ORDERS PAGE -->
+        <div x-show="currentPage === 'orders'" x-cloak>
+          <div class="mb-6 flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">รายการออเดอร์</h2>
+              <p class="text-gray-500">ประวัติการสั่งซื้อทั้งหมด</p>
+            </div>
+            <button @click="loadOrders()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+              </svg>
+              รีเฟรช
+            </button>
+          </div>
+
+          <!-- Filters -->
+          <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input type="date" x-model="orders.filterDate" @change="filterOrders()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+
+              <select x-model="orders.filterStatus" @change="filterOrders()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">ทุกสถานะ</option>
+                <option value="COMPLETED">เสร็จสิ้น</option>
+                <option value="CANCELLED">ยกเลิก</option>
+              </select>
+
+              <select x-model="orders.filterChannel" @change="filterOrders()" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">ทุกช่องทาง</option>
+                <option value="POS">หน้าร้าน</option>
+                <option value="DELIVERY">เดลิเวอรี่</option>
+              </select>
+
+              <input type="text" x-model="orders.searchQuery" @input="filterOrders()" placeholder="ค้นหาออเดอร์..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+          </div>
+
+          <!-- Orders Table -->
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="gradient-purple-pink text-white">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">เลขที่ออเดอร์</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">วันที่/เวลา</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">ช่องทาง</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">รายการ</th>
+                    <th class="px-6 py-3 text-right text-sm font-semibold">ยอดรวม</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">สถานะ</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <template x-for="order in orders.filteredList" :key="order.id">
+                    <tr class="hover:bg-purple-50 transition">
+                      <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="order.orderNumber"></td>
+                      <td class="px-6 py-4 text-sm text-gray-600" x-text="formatDateTime(order.createdAt)"></td>
+                      <td class="px-6 py-4 text-sm">
+                        <span class="badge badge-info" x-text="order.channel"></span>
+                      </td>
+                      <td class="px-6 py-4 text-sm text-gray-600" x-text="order.itemCount + ' รายการ'"></td>
+                      <td class="px-6 py-4 text-sm font-bold text-right" x-text="formatCurrency(order.totalAmount)"></td>
+                      <td class="px-6 py-4 text-center">
+                        <span :class="{
+                          'badge-success': order.status === 'COMPLETED',
+                          'badge-danger': order.status === 'CANCELLED'
+                        }" class="badge" x-text="order.status === 'COMPLETED' ? 'เสร็จสิ้น' : 'ยกเลิก'"></span>
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        <button @click="viewOrderDetail(order)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                          ดูรายละเอียด
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+
+              <div x-show="orders.filteredList.length === 0" class="text-center py-12 text-gray-400">
+                <svg class="w-20 h-20 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19,20H5V9H19M16,2H8C6.9,2 6,2.9 6,4V8H18V4C18,2.9 17.1,2 16,2M20,10H4C2.9,10 2,10.9 2,12V20C2,21.1 2.9,22 4,22H20C21.1,22 22,21.1 22,20V12C22,10.9 21.1,10 20,10Z" />
+                </svg>
+                <p>ไม่พบออเดอร์</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRODUCTS PAGE -->
+        <div x-show="currentPage === 'products'" x-cloak>
+          <div class="mb-6 flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">จัดการสินค้า</h2>
+              <p class="text-gray-500">เพิ่ม แก้ไข และจัดการสินค้าทั้งหมด</p>
+            </div>
+            <button @click="openProductModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+              </svg>
+              เพิ่มสินค้า
+            </button>
+          </div>
+
+          <!-- Products Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="product in products.list" :key="product.id">
+              <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+                <div class="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <svg class="w-24 h-24 text-purple-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
+                  </svg>
+                </div>
+                <div class="p-4">
+                  <div class="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 class="font-bold text-gray-800" x-text="product.name"></h3>
+                      <p class="text-sm text-gray-500" x-text="product.category"></p>
+                    </div>
+                    <span :class="product.isActive ? 'badge-success' : 'badge-danger'" class="badge" x-text="product.isActive ? 'เปิดขาย' : 'ปิดขาย'"></span>
+                  </div>
+                  <p class="text-purple-600 font-bold text-lg mb-3" x-text="formatCurrency(product.price)"></p>
+                  <div class="flex space-x-2">
+                    <button @click="editProduct(product)" class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm">
+                      แก้ไข
+                    </button>
+                    <button @click="toggleProductStatus(product)" class="flex-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm" x-text="product.isActive ? 'ปิดขาย' : 'เปิดขาย'">
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- INVENTORY PAGE -->
+        <div x-show="currentPage === 'inventory'" x-cloak>
+          <div class="mb-6 flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">จัดการคลังสินค้า</h2>
+              <p class="text-gray-500">ติดตามและจัดการสต็อกวัตถุดิบ</p>
+            </div>
+            <button @click="openStockAdjustModal()" class="px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+              </svg>
+              ปรับสต็อก
+            </button>
+          </div>
+
+          <!-- Inventory Table -->
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="gradient-purple-pink text-white">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">รหัสสินค้า</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold">ชื่อวัตถุดิบ</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">สต็อกคงเหลือ</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">หน่วย</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">จุดสั่งซื้อ</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">สถานะ</th>
+                    <th class="px-6 py-3 text-center text-sm font-semibold">การกระทำ</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <template x-for="item in inventory.list" :key="item.id">
+                    <tr class="hover:bg-purple-50 transition" :class="{'bg-orange-50': item.stock <= item.reorderPoint}">
+                      <td class="px-6 py-4 text-sm font-semibold text-purple-600" x-text="item.sku"></td>
+                      <td class="px-6 py-4 text-sm font-medium text-gray-800" x-text="item.name"></td>
+                      <td class="px-6 py-4 text-center">
+                        <span class="text-lg font-bold" :class="item.stock <= item.reorderPoint ? 'text-orange-600' : 'text-gray-800'" x-text="item.stock"></span>
+                      </td>
+                      <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.unit"></td>
+                      <td class="px-6 py-4 text-center text-sm text-gray-600" x-text="item.reorderPoint"></td>
+                      <td class="px-6 py-4 text-center">
+                        <span :class="{
+                          'badge-success': item.stock > item.reorderPoint,
+                          'badge-warning': item.stock <= item.reorderPoint && item.stock > 0,
+                          'badge-danger': item.stock <= 0
+                        }" class="badge" x-text="item.stock > item.reorderPoint ? 'ปกติ' : (item.stock > 0 ? 'ใกล้หมด' : 'หมด')"></span>
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        <button @click="adjustStock(item)" class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                          ปรับสต็อก
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORTS PAGE -->
+        <div x-show="currentPage === 'reports'" x-cloak>
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">รายงาน</h2>
+            <p class="text-gray-500">วิเคราะห์ข้อมูลการขายและสต็อก</p>
+          </div>
+
+          <!-- Date Range Filter -->
+          <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">วันที่เริ่มต้น</label>
+                <input type="date" x-model="reports.startDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">วันที่สิ้นสุด</label>
+                <input type="date" x-model="reports.endDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+              <button @click="loadReports()" class="px-6 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+                สร้างรายงาน
+              </button>
+            </div>
+          </div>
+
+          <!-- Report Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-sm text-gray-500 mb-2">ยอดขายรวม</h3>
+              <p class="text-3xl font-bold text-purple-600" x-text="formatCurrency(reports.totalSales)"></p>
+              <p class="text-sm text-green-500 mt-2">+12.5% จากช่วงก่อน</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-sm text-gray-500 mb-2">จำนวนออเดอร์</h3>
+              <p class="text-3xl font-bold text-blue-600" x-text="reports.totalOrders"></p>
+              <p class="text-sm text-green-500 mt-2">+8.3% จากช่วงก่อน</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-sm text-gray-500 mb-2">ยอดขายเฉลี่ย/ออเดอร์</h3>
+              <p class="text-3xl font-bold text-orange-600" x-text="formatCurrency(reports.avgOrderValue)"></p>
+              <p class="text-sm text-green-500 mt-2">+3.7% จากช่วงก่อน</p>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">ยอดขายรายวัน</h3>
+              <canvas id="salesChart"></canvas>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">สินค้าขายดี</h3>
+              <canvas id="topProductsChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div x-show="currentPage === 'settings'" x-cloak>
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">ตั้งค่า</h2>
+            <p class="text-gray-500">ตั้งค่าระบบและข้อมูลร้านค้า</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Shop Settings -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">ข้อมูลร้านค้า</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อร้าน</label>
+                  <input type="text" x-model="settings.shopName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">เบอร์โทรศัพท์</label>
+                  <input type="tel" x-model="settings.phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">ที่อยู่</label>
+                  <textarea x-model="settings.address" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+                <button @click="saveSettings()" class="w-full px-4 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+                  บันทึกการตั้งค่า
+                </button>
+              </div>
+            </div>
+
+            <!-- Tax & Receipt Settings -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">การตั้งค่าภาษีและใบเสร็จ</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">อัตราภาษี (%)</label>
+                  <input type="number" x-model="settings.taxRate" min="0" max="100" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">เลขประจำตัวผู้เสียภาษี</label>
+                  <input type="text" x-model="settings.taxId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" x-model="settings.printReceipt" id="printReceipt" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                  <label for="printReceipt" class="ml-2 text-sm text-gray-700">พิมพ์ใบเสร็จอัตโนมัติ</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" x-model="settings.autoDeductStock" id="autoDeductStock" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                  <label for="autoDeductStock" class="ml-2 text-sm text-gray-700">หักสต็อกอัตโนมัติ</label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
 
       </main>
 
+    </div>
+  </div>
+
+  <!-- Variant Selector Modal -->
+  <div x-show="modals.variantSelector"
+       x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
+       @click.self="modals.variantSelector = false">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800" x-text="selectedProduct.name"></h3>
+            <p class="text-purple-600 font-bold text-lg" x-text="formatCurrency(calculateVariantPrice())"></p>
+          </div>
+          <button @click="modals.variantSelector = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Size Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">ขนาด</label>
+          <div class="grid grid-cols-3 gap-3">
+            <button @click="selectedVariants.size = 'SMALL'" :class="selectedVariants.size === 'SMALL' ? 'selected' : ''" class="variant-btn">
+              <div class="text-center">
+                <p class="font-semibold">Small</p>
+                <p class="text-xs text-gray-500">เล็ก</p>
+              </div>
+            </button>
+            <button @click="selectedVariants.size = 'MEDIUM'" :class="selectedVariants.size === 'MEDIUM' ? 'selected' : ''" class="variant-btn">
+              <div class="text-center">
+                <p class="font-semibold">Medium</p>
+                <p class="text-xs text-gray-500">กลาง</p>
+              </div>
+            </button>
+            <button @click="selectedVariants.size = 'LARGE'" :class="selectedVariants.size === 'LARGE' ? 'selected' : ''" class="variant-btn">
+              <div class="text-center">
+                <p class="font-semibold">Large</p>
+                <p class="text-xs text-gray-500">ใหญ่ +10฿</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Temperature Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">อุณหภูมิ</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button @click="selectedVariants.temperature = 'HOT'" :class="selectedVariants.temperature === 'HOT' ? 'selected' : ''" class="variant-btn">
+              <div class="flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.66,11.2C17.43,10.9 17.15,10.64 16.89,10.38C16.22,9.78 15.46,9.35 14.82,8.72C13.33,7.26 13,4.85 13.95,3C13,3.23 12.17,3.75 11.46,4.32C8.87,6.4 7.85,10.07 9.07,13.22C9.11,13.32 9.15,13.42 9.15,13.55C9.15,13.77 9,13.97 8.8,14.05C8.57,14.15 8.33,14.09 8.14,13.93C8.08,13.88 8.04,13.83 8,13.76C6.87,12.33 6.69,10.28 7.45,8.64C5.78,10 4.87,12.3 5,14.47C5.06,14.97 5.12,15.47 5.29,15.97C5.43,16.57 5.7,17.17 6,17.7C7.08,19.43 8.95,20.67 10.96,20.92C13.1,21.19 15.39,20.8 17.03,19.32C18.86,17.66 19.5,15 18.56,12.72L18.43,12.46C18.22,12 17.66,11.2 17.66,11.2M14.5,17.5C14.22,17.74 13.76,18 13.4,18.1C12.28,18.5 11.16,17.94 10.5,17.28C11.69,17 12.4,16.12 12.61,15.23C12.78,14.43 12.46,13.77 12.33,13C12.21,12.26 12.23,11.63 12.5,10.94C12.69,11.32 12.89,11.7 13.13,12C13.9,13 15.11,13.44 15.37,14.8C15.41,14.94 15.43,15.08 15.43,15.23C15.46,16.05 15.1,16.95 14.5,17.5H14.5Z" />
+                </svg>
+                <span class="font-semibold">ร้อน (Hot)</span>
+              </div>
+            </button>
+            <button @click="selectedVariants.temperature = 'COLD'" :class="selectedVariants.temperature === 'COLD' ? 'selected' : ''" class="variant-btn">
+              <div class="flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,11L10.29,8.83L11.71,7.42L12,7.71L12.29,7.42L13.71,8.83M12,2L10.5,3.5L11.5,4.5L10.5,5.5L11.5,6.5L10.5,7.5L12,9L13.5,7.5L12.5,6.5L13.5,5.5L12.5,4.5L13.5,3.5M7,12L5.5,10.5L4.5,11.5L3.5,10.5L2.5,11.5L1.5,10.5L0,12L1.5,13.5L2.5,12.5L3.5,13.5L4.5,12.5L5.5,13.5M16.5,10.5L15,12L16.5,13.5L17.5,12.5L18.5,13.5L19.5,12.5L20.5,13.5L22,12L20.5,10.5L19.5,11.5L18.5,10.5L17.5,11.5M8.83,13.71L7.42,12.29L7.71,12L7.42,11.71L8.83,10.29L10.29,11.76L12,10L13.71,11.76L15.17,10.29L16.58,11.71L16.29,12L16.58,12.29L15.17,13.71L13.71,12.24L12,14L10.29,12.24M11.71,16.58L12,16.29L12.29,16.58L13.71,15.17L15,17L13.5,18.5L12.5,17.5L11.5,18.5L12.5,19.5L11.5,20.5L12.5,21.5L11,23L9.5,21.5L10.5,20.5L9.5,19.5L10.5,18.5L9.5,17.5L8.5,18.5L7,17L8.29,15.17" />
+                </svg>
+                <span class="font-semibold">เย็น (Cold)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sweetness Level -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">ความหวาน</label>
+          <div class="grid grid-cols-5 gap-2">
+            <button @click="selectedVariants.sweetness = '0%'" :class="selectedVariants.sweetness === '0%' ? 'selected' : ''" class="variant-btn py-3">
+              <p class="font-semibold">0%</p>
+            </button>
+            <button @click="selectedVariants.sweetness = '25%'" :class="selectedVariants.sweetness === '25%' ? 'selected' : ''" class="variant-btn py-3">
+              <p class="font-semibold">25%</p>
+            </button>
+            <button @click="selectedVariants.sweetness = '50%'" :class="selectedVariants.sweetness === '50%' ? 'selected' : ''" class="variant-btn py-3">
+              <p class="font-semibold">50%</p>
+            </button>
+            <button @click="selectedVariants.sweetness = '75%'" :class="selectedVariants.sweetness === '75%' ? 'selected' : ''" class="variant-btn py-3">
+              <p class="font-semibold">75%</p>
+            </button>
+            <button @click="selectedVariants.sweetness = '100%'" :class="selectedVariants.sweetness === '100%' ? 'selected' : ''" class="variant-btn py-3">
+              <p class="font-semibold">100%</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add-ons / Modifiers -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">ท้อปปิ้งเพิ่มเติม</label>
+          <div class="space-y-2">
+            <label class="flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+              <div class="flex items-center">
+                <input type="checkbox" x-model="selectedAddons" value="วิปครีม +10฿" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                <span class="ml-3 text-gray-700">วิปครีม</span>
+              </div>
+              <span class="text-purple-600 font-semibold">+10฿</span>
+            </label>
+            <label class="flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+              <div class="flex items-center">
+                <input type="checkbox" x-model="selectedAddons" value="ช็อตกาแฟเพิ่ม +15฿" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                <span class="ml-3 text-gray-700">ช็อตกาแฟเพิ่ม</span>
+              </div>
+              <span class="text-purple-600 font-semibold">+15฿</span>
+            </label>
+            <label class="flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+              <div class="flex items-center">
+                <input type="checkbox" x-model="selectedAddons" value="นมถั่วเหลือง +10฿" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                <span class="ml-3 text-gray-700">เปลี่ยนนมถั่วเหลือง</span>
+              </div>
+              <span class="text-purple-600 font-semibold">+10฿</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">จำนวน</label>
+          <div class="flex items-center space-x-4">
+            <button @click="variantQuantity > 1 ? variantQuantity-- : null" class="w-10 h-10 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 flex items-center justify-center font-bold text-xl">-</button>
+            <span class="text-2xl font-bold w-12 text-center" x-text="variantQuantity"></span>
+            <button @click="variantQuantity++" class="w-10 h-10 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 flex items-center justify-center font-bold text-xl">+</button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3">
+          <button @click="modals.variantSelector = false" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+            ยกเลิก
+          </button>
+          <button @click="addToCart()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition">
+            เพิ่มลงตะกร้า - <span x-text="formatCurrency(calculateVariantPrice() * variantQuantity)"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal -->
+  <div x-show="modals.payment"
+       x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop"
+       @click.self="modals.payment = false">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4">
+      <div class="p-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">ชำระเงิน</h3>
+
+        <!-- Order Summary -->
+        <div class="bg-purple-50 rounded-lg p-4 mb-6">
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-600">รวมย่อย</span>
+            <span class="font-semibold" x-text="formatCurrency(pos.subtotal)"></span>
+          </div>
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-600">ภาษี (7%)</span>
+            <span class="font-semibold" x-text="formatCurrency(pos.tax)"></span>
+          </div>
+          <div class="flex justify-between text-xl font-bold text-purple-600 pt-2 border-t border-purple-200">
+            <span>รวมทั้งสิ้น</span>
+            <span x-text="formatCurrency(pos.total)"></span>
+          </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-3">วิธีการชำระเงิน</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button @click="payment.method = 'CASH'" :class="payment.method === 'CASH' ? 'border-purple-600 bg-purple-50' : 'border-gray-300'" class="p-4 border-2 rounded-lg hover:border-purple-400 transition">
+              <svg class="w-8 h-8 mx-auto mb-2" :class="payment.method === 'CASH' ? 'text-purple-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3,6H21V18H3V6M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M7,8A2,2 0 0,1 5,10V14A2,2 0 0,1 7,16H17A2,2 0 0,1 19,14V10A2,2 0 0,1 17,8H7Z" />
+              </svg>
+              <p class="font-semibold text-sm">เงินสด</p>
+            </button>
+            <button @click="payment.method = 'TRANSFER'" :class="payment.method === 'TRANSFER' ? 'border-purple-600 bg-purple-50' : 'border-gray-300'" class="p-4 border-2 rounded-lg hover:border-purple-400 transition">
+              <svg class="w-8 h-8 mx-auto mb-2" :class="payment.method === 'TRANSFER' ? 'text-purple-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+              </svg>
+              <p class="font-semibold text-sm">โอนเงิน</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cash Payment -->
+        <div x-show="payment.method === 'CASH'" class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">รับเงินมา</label>
+          <input type="number" x-model="payment.received" @input="calculateChange()" placeholder="0.00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
+          <div class="mt-3 p-3 bg-green-50 rounded-lg">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-700 font-semibold">เงินทอน</span>
+              <span class="text-2xl font-bold text-green-600" x-text="formatCurrency(payment.change)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transfer Payment -->
+        <div x-show="payment.method === 'TRANSFER'" class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">อัพโหลดสลิปโอนเงิน</label>
+          <input type="file" @change="handleSlipUpload($event)" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3">
+          <button @click="modals.payment = false" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+            ยกเลิก
+          </button>
+          <button @click="confirmPayment()" :disabled="!canConfirmPayment()" class="flex-1 px-6 py-3 gradient-purple-pink text-white font-semibold rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+            ยืนยันชำระเงิน
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
