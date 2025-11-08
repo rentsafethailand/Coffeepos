@@ -1336,9 +1336,9 @@
             <p class="text-gray-500">วิเคราะห์ข้อมูลการขายและสต็อก</p>
           </div>
 
-          <!-- Date Range Filter -->
+          <!-- Date Range Filter with Export Options -->
           <div class="bg-white rounded-xl shadow-md p-4 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">วันที่เริ่มต้น</label>
                 <input type="date" x-model="reports.startDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
@@ -1347,9 +1347,33 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-2">วันที่สิ้นสุด</label>
                 <input type="date" x-model="reports.endDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
               </div>
-              <button @click="loadReports()" class="px-6 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">มุมมอง</label>
+                <select x-model="reports.viewMode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="daily">รายวัน</option>
+                  <option value="monthly">รายเดือน</option>
+                </select>
+              </div>
+              <button @click="loadReports()" class="px-6 py-2 gradient-purple-pink text-white rounded-lg hover:shadow-lg transition flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
+                </svg>
                 สร้างรายงาน
               </button>
+              <div class="flex gap-2">
+                <button @click="exportReportExcel()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center text-sm">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                  </svg>
+                  Excel
+                </button>
+                <button @click="exportReportPDF()" class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center justify-center text-sm">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                  </svg>
+                  PDF
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1436,6 +1460,40 @@
                     <p class="text-sm">ยังไม่มีข้อมูลยอดขายตามช่องทาง</p>
                   </div>
                 </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sales Trend Chart -->
+          <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+              <span x-text="reports.viewMode === 'daily' ? 'กราฟยอดขายรายวัน' : 'กราฟยอดขายรายเดือน'"></span>
+            </h3>
+            <canvas id="salesTrendChart" class="w-full" style="max-height: 300px;"></canvas>
+          </div>
+
+          <!-- Period Comparison -->
+          <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">เปรียบเทียบช่วงเวลา</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">ช่วงที่เลือก</h4>
+                <p class="text-2xl font-bold text-purple-600" x-text="formatCurrency(reports.currentPeriod?.totalSales || 0)"></p>
+                <p class="text-xs text-gray-600 mt-1">
+                  <span x-text="reports.startDate"></span> - <span x-text="reports.endDate"></span>
+                </p>
+              </div>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">ช่วงก่อนหน้า</h4>
+                <p class="text-2xl font-bold text-gray-700" x-text="formatCurrency(reports.previousPeriod?.totalSales || 0)"></p>
+                <p class="text-xs text-gray-600 mt-1" x-text="'ช่วงก่อนหน้า (' + calculateDaysDiff() + ' วัน)'"></p>
+              </div>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">การเปลี่ยนแปลง</h4>
+                <p class="text-2xl font-bold"
+                   :class="calculatePercentChange() >= 0 ? 'text-green-600' : 'text-red-600'"
+                   x-text="(calculatePercentChange() >= 0 ? '+' : '') + calculatePercentChange().toFixed(1) + '%'"></p>
+                <p class="text-xs text-gray-600 mt-1">เทียบกับช่วงก่อนหน้า</p>
               </div>
             </div>
           </div>
@@ -3188,12 +3246,17 @@
       reports: {
         startDate: '',
         endDate: '',
+        viewMode: 'daily',  // 'daily' or 'monthly'
         totalSales: 0,
         totalOrders: 0,
         avgOrderValue: 0,
         topProducts: [],
         salesByChannel: [],
-        recentOrders: []
+        recentOrders: [],
+        salesTrendData: [],  // For chart
+        currentPeriod: { totalSales: 0, totalOrders: 0 },
+        previousPeriod: { totalSales: 0, totalOrders: 0 },
+        salesChart: null  // Chart.js instance
       },
 
       // Settings
