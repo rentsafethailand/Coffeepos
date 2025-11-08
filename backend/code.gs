@@ -2536,8 +2536,9 @@ function getChannels(params) {
         isActive: row[5],
         settings: row[6],
         createdDate: row[7] ? new Date(row[7]).toISOString() : null,
-        orderNumberMode: row[8] || 'AUTO',       // AUTO or MANUAL
-        orderNumberFormat: row[9] || '#{NNNN}'   // Format for AUTO mode
+        orderNumberMode: row[8] || 'AUTO',          // AUTO or MANUAL
+        orderNumberFormat: row[9] || '#{NNNN}',     // Format for AUTO mode
+        icon: row[10] || 'fa-solid fa-store'        // Font Awesome icon
       });
     }
 
@@ -2575,7 +2576,8 @@ function createChannel(params) {
       channelData.settings ? JSON.stringify(channelData.settings) : '{}',
       new Date(),
       channelData.orderNumberMode || 'AUTO',        // NEW: AUTO or MANUAL
-      channelData.orderNumberFormat || '#{NNNN}'    // NEW: Format template
+      channelData.orderNumberFormat || '#{NNNN}',   // NEW: Format template
+      channelData.icon || 'fa-solid fa-store'       // NEW: Font Awesome icon
     ];
 
     sheet.appendRow(channel);
@@ -2616,6 +2618,7 @@ function updateChannel(params) {
         if (channelData.isActive !== undefined) sheet.getRange(i + 1, 6).setValue(channelData.isActive);
         if (channelData.orderNumberMode !== undefined) sheet.getRange(i + 1, 9).setValue(channelData.orderNumberMode);  // NEW
         if (channelData.orderNumberFormat !== undefined) sheet.getRange(i + 1, 10).setValue(channelData.orderNumberFormat);  // NEW
+        if (channelData.icon !== undefined) sheet.getRange(i + 1, 11).setValue(channelData.icon);  // NEW: Icon
 
         return {
           success: true,
